@@ -1,6 +1,8 @@
 // src/App.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
+import { taskTemplates, createDailyTasksFromTemplates } from './config/taskTemplates';
+import EnhancedTaskList from './components/EnhancedTaskList';
 import {
   User,
   CheckCircle,
@@ -26,15 +28,6 @@ import {
   Bar
 } from 'recharts';
 
-const defaultTemplates = [
-  'Drink Water (8 glasses)',
-  'Exercise (30 min)',
-  'Study/Learn (1 hour)',
-  'Eat Healthy Meals',
-  'Sleep 8 hours',
-  'Meditate (10 min)'
-];
-
 function isoDateString(d = new Date()) {
   return d.toISOString().split('T')[0];
 }
@@ -53,6 +46,7 @@ export default function App() {
   const [name, setName] = useState('');
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [tasksLoading, setTasksLoading] = useState(false);
 
   const today = isoDateString();
 
@@ -75,7 +69,6 @@ export default function App() {
     };
   }, []);
 
-  
   useEffect(() => {
     if (!user) return;
     loadTasks();
@@ -83,7 +76,6 @@ export default function App() {
     loadWeeklyProgress();
   }, [user, currentPage]);
 
-  
   const ensureDailyTasks = useCallback(async (uid, dateStr) => {
     const { data: existing, error: exErr } = await supabase
       .from('tasks')
@@ -98,20 +90,17 @@ export default function App() {
     }
     if (existing && existing.length > 0) return;
 
-    const inserts = defaultTemplates.map((t) => ({
-      user_id: uid,
-      task_name: t,
-      date: dateStr,
-      completed: false
-    }));
-
-    const { error: insErr } = await supabase.from('tasks').insert(inserts);
+    // Create tasks from templates
+    const dailyTasks = createDailyTasksFromTemplates(uid, dateStr);
+    
+    const { error: insErr } = await supabase.from('tasks').insert(dailyTasks);
     if (insErr) console.error('insert daily tasks error', insErr);
   }, []);
 
-  
   const loadTasks = useCallback(async () => {
     if (!user) return;
+    setTasksLoading(true);
+    
     await ensureDailyTasks(user.id, today);
 
     const { data, error } = await supabase
@@ -125,14 +114,13 @@ export default function App() {
       console.error('load tasks error', error);
       setTasks([]);
       setMessage('⚠️ Could not load tasks. Check console for details.');
-      return;
+    } else {
+      setTasks(data || []);
     }
-    setTasks(data || []);
+    setTasksLoading(false);
   }, [user, today, ensureDailyTasks]);
 
-  
   const loadAllUsersProgress = useCallback(async () => {
-    
     const { data: profiles } = await supabase.from('profiles').select('id, name').order('name', { ascending: true });
     const { data: tasksToday, error: tErr } = await supabase.from('tasks').select('*').eq('date', today);
 
@@ -143,35 +131,66 @@ export default function App() {
       return;
     }
 
-    
     let progress;
     if (profiles && profiles.length > 0) {
       progress = profiles.map((p) => {
         const userTasks = (tasksToday || []).filter((t) => t.user_id === p.id);
-        const total = userTasks.length || defaultTemplates.length;
-        const completed = userTasks.filter((t) => t.completed).length;
+        
+        // Calculate completion based on main tasks only
+        const mainTasks = userTasks.filter(t => t.is_parent || t.task_type === 'simple');
+        const completedMainTasks = mainTasks.filter(t => {
+          if (t.task_type === 'simple') return t.completed;
+          
+          // For expandable tasks, check if all subtasks are completed
+          const subtasks = userTasks.filter(st => st.parent_id === t.task_id);
+          return subtasks.length > 0 && subtasks.every(st => st.completed);
+        });
+        
+        const total = mainTasks.length || taskTemplates.length;
+        const completed = completedMainTasks.length;
         const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-        return { user: { id: p.id, name: p.name || p.id }, tasks: userTasks, completed, total, percentage };
+        
+        return { 
+          user: { id: p.id, name: p.name || p.id }, 
+          tasks: userTasks, 
+          completed, 
+          total, 
+          percentage 
+        };
       });
     } else {
-      
       const map = {};
       (tasksToday || []).forEach((t) => {
         if (!map[t.user_id]) map[t.user_id] = [];
         map[t.user_id].push(t);
       });
+      
       progress = Object.keys(map).map((uid) => {
-        const utasks = map[uid];
-        const total = utasks.length || defaultTemplates.length;
-        const completed = utasks.filter((t) => t.completed).length;
-        return { user: { id: uid, name: uid }, tasks: utasks, completed, total, percentage: Math.round((completed / total) * 100) };
+        const userTasks = map[uid];
+        const mainTasks = userTasks.filter(t => t.is_parent || t.task_type === 'simple');
+        const completedMainTasks = mainTasks.filter(t => {
+          if (t.task_type === 'simple') return t.completed;
+          
+          const subtasks = userTasks.filter(st => st.parent_id === t.task_id);
+          return subtasks.length > 0 && subtasks.every(st => st.completed);
+        });
+        
+        const total = mainTasks.length || taskTemplates.length;
+        const completed = completedMainTasks.length;
+        
+        return { 
+          user: { id: uid, name: uid }, 
+          tasks: userTasks, 
+          completed, 
+          total, 
+          percentage: Math.round((completed / total) * 100) 
+        };
       });
     }
 
     setAllUsersProgress(progress);
   }, [today]);
 
-  
   const loadWeeklyProgress = useCallback(async () => {
     if (!user) return;
     const week = [];
@@ -179,20 +198,45 @@ export default function App() {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
-      const { data: tasksOnDay, error } = await supabase.from('tasks').select('completed, id').eq('user_id', user.id).eq('date', dateStr);
+      
+      const { data: tasksOnDay, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', dateStr);
+        
       if (error) {
-        week.push({ date: d.toLocaleDateString('en', { weekday: 'short' }), percentage: 0, completed: 0, total: 0 });
+        week.push({ 
+          date: d.toLocaleDateString('en', { weekday: 'short' }), 
+          percentage: 0, 
+          completed: 0, 
+          total: 0 
+        });
         continue;
       }
-      const completed = (tasksOnDay || []).filter((t) => t.completed).length;
-      const total = (tasksOnDay || []).length || defaultTemplates.length;
+      
+      const mainTasks = (tasksOnDay || []).filter(t => t.is_parent || t.task_type === 'simple');
+      const completedMainTasks = mainTasks.filter(t => {
+        if (t.task_type === 'simple') return t.completed;
+        
+        const subtasks = (tasksOnDay || []).filter(st => st.parent_id === t.task_id);
+        return subtasks.length > 0 && subtasks.every(st => st.completed);
+      });
+      
+      const completed = completedMainTasks.length;
+      const total = mainTasks.length || taskTemplates.length;
       const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-      week.push({ date: d.toLocaleDateString('en', { weekday: 'short' }), percentage, completed, total });
+      
+      week.push({ 
+        date: d.toLocaleDateString('en', { weekday: 'short' }), 
+        percentage, 
+        completed, 
+        total 
+      });
     }
     setWeeklyData(week);
   }, [user]);
 
-  
   const handleAuth = async () => {
     setLoading(true);
     setMessage(null);
@@ -204,15 +248,17 @@ export default function App() {
         setUser(data.user);
         setMessage('✅ Signed in successfully!');
       } else {
-        const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
+        const { data, error } = await supabase.auth.signUp({ 
+          email, 
+          password, 
+          options: { data: { full_name: name } } 
+        });
         if (error) throw error;
         
         setMessage('✅ Account created! Check your email to confirm (if confirmation is enabled).');
 
-        
         if (data?.user) {
           const uid = data.user.id;
-          
           await supabase.from('profiles').insert([{ id: uid, name }], { returning: 'minimal' }).catch(() => {});
           await ensureDailyTasks(uid, today);
         }
@@ -236,21 +282,30 @@ export default function App() {
     setMessage('✅ Signed out');
   };
 
-  const toggleTask = async (taskId) => {
-    const t = tasks.find((x) => x.id === taskId);
-    if (!t) return;
-    const { error } = await supabase.from('tasks').update({ completed: !t.completed, updated_at: new Date() }).match({ id: taskId, user_id: user.id });
+  const handleToggleTask = async (taskId, newCompleted) => {
+    const { error } = await supabase
+      .from('tasks')
+      .update({ completed: newCompleted, updated_at: new Date() })
+      .match({ id: taskId, user_id: user.id });
+      
     if (error) {
       setMessage('⚠️ Could not update task');
       console.error(error);
       return;
     }
     
-    setTasks((prev) => prev.map((x) => (x.id === taskId ? { ...x, completed: !x.completed } : x)));
+    setTasks(prev => prev.map(task => 
+      task.id === taskId ? { ...task, completed: newCompleted } : task
+    ));
+    
     loadAllUsersProgress();
   };
 
-  
+  const handleToggleSubtask = async (subtaskId, newCompleted) => {
+    await handleToggleTask(subtaskId, newCompleted);
+  };
+
+  // Auth screen
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -321,10 +376,20 @@ export default function App() {
     );
   }
 
-  
-  const completedToday = tasks.filter((t) => t.completed).length;
-  const totalTasks = tasks.length;
+  // Calculate progress for dashboard
+  const mainTasks = tasks.filter(t => t.is_parent || t.task_type === 'simple');
+  const completedMainTasks = mainTasks.filter(t => {
+    if (t.task_type === 'simple') return t.completed;
+    
+    // For expandable tasks, check if all subtasks are completed
+    const subtasks = tasks.filter(st => st.parent_id === t.task_id);
+    return subtasks.length > 0 && subtasks.every(st => st.completed);
+  });
+
+  const completedToday = completedMainTasks.length;
+  const totalTasks = mainTasks.length;
   const completionRate = totalTasks > 0 ? Math.round((completedToday / totalTasks) * 100) : 0;
+  
   const pieData = [
     { name: 'Completed', value: completedToday, color: '#10B981' },
     { name: 'Remaining', value: totalTasks - completedToday, color: '#E5E7EB' }
@@ -356,8 +421,18 @@ export default function App() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Navigation */}
         <nav className="flex space-x-1 mb-8">
-          {[{ id: 'dashboard', label: 'My Tasks', icon: CheckCircle }, { id: 'group', label: 'Team Progress', icon: Users }, { id: 'reports', label: 'Reports', icon: BarChart3 }].map(({ id, label, icon: Icon }) => (
-            <button key={id} onClick={() => setCurrentPage(id)} className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${currentPage === id ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'}`}>
+          {[
+            { id: 'dashboard', label: 'My Tasks', icon: CheckCircle }, 
+            { id: 'group', label: 'Team Progress', icon: Users }, 
+            { id: 'reports', label: 'Reports', icon: BarChart3 }
+          ].map(({ id, label, icon: Icon }) => (
+            <button 
+              key={id} 
+              onClick={() => setCurrentPage(id)} 
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                currentPage === id ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
               <Icon className="h-5 w-5" />
               <span>{label}</span>
             </button>
@@ -368,29 +443,16 @@ export default function App() {
         {currentPage === 'dashboard' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">Today's Tasks</h2>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="h-5 w-5 text-gray-400" />
-                    <span className="text-sm text-gray-600">{new Date().toLocaleDateString('en', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {tasks.map((task) => (
-                    <div key={task.id} className="flex items-center space-x-4 p-4 rounded-lg border hover:bg-gray-50 transition-colors">
-                      <button onClick={() => toggleTask(task.id)} className="flex-shrink-0">
-                        {task.completed ? <CheckCircle className="h-6 w-6 text-green-500" /> : <Circle className="h-6 w-6 text-gray-400 hover:text-green-500 transition-colors" />}
-                      </button>
-                      <span className={`font-medium ${task.completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}>{task.task_name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <EnhancedTaskList 
+                tasks={tasks}
+                onToggleTask={handleToggleTask}
+                onToggleSubtask={handleToggleSubtask}
+                loading={tasksLoading}
+              />
             </div>
 
             <div className="space-y-6">
+              {/* Progress Summary */}
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Today's Progress</h3>
                 <div className="text-center mb-4">
@@ -412,11 +474,46 @@ export default function App() {
                   </ResponsiveContainer>
                 </div>
               </div>
+
+              {/* Task Categories Overview */}
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Categories</h3>
+                <div className="space-y-3">
+                  {taskTemplates.map(template => {
+                    const templateTasks = tasks.filter(t => t.task_id === template.id || t.parent_id === template.id);
+                    const mainTask = templateTasks.find(t => t.task_id === template.id);
+                    
+                    let isCompleted = false;
+                    if (template.type === 'simple') {
+                      isCompleted = mainTask?.completed || false;
+                    } else {
+                      const subtasks = templateTasks.filter(t => t.parent_id === template.id);
+                      isCompleted = subtasks.length > 0 && subtasks.every(st => st.completed);
+                    }
+
+                    return (
+                      <div key={template.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-lg">{template.icon}</span>
+                          <span className={`text-sm font-medium ${isCompleted ? 'text-green-600' : 'text-gray-600'}`}>
+                            {template.name}
+                          </span>
+                        </div>
+                        {isCompleted ? (
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        ) : (
+                          <Circle className="h-5 w-5 text-gray-400" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Group view */}
+        {/* Group View */}
         {currentPage === 'group' && (
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-6">Team Progress - Today</h2>
@@ -438,12 +535,32 @@ export default function App() {
                   </div>
 
                   <div className="space-y-2">
-                    {u.tasks.map((task) => (
-                      <div key={task.id} className="flex items-center space-x-2 text-sm">
-                        {task.completed ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Circle className="h-4 w-4 text-gray-400" />}
-                        <span className={task.completed ? 'text-gray-500' : 'text-gray-700'}>{task.task_name}</span>
-                      </div>
-                    ))}
+                    {taskTemplates.map(template => {
+                      const userTemplateTasks = u.tasks.filter(t => t.task_id === template.id || t.parent_id === template.id);
+                      const mainTask = userTemplateTasks.find(t => t.task_id === template.id);
+                      
+                      let isCompleted = false;
+                      if (template.type === 'simple') {
+                        isCompleted = mainTask?.completed || false;
+                      } else {
+                        const subtasks = userTemplateTasks.filter(t => t.parent_id === template.id);
+                        isCompleted = subtasks.length > 0 && subtasks.every(st => st.completed);
+                      }
+
+                      return (
+                        <div key={template.id} className="flex items-center space-x-2 text-sm">
+                          {isCompleted ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Circle className="h-4 w-4 text-gray-400" />
+                          )}
+                          <span className={`flex items-center space-x-2 ${isCompleted ? 'text-gray-500' : 'text-gray-700'}`}>
+                            <span>{template.icon}</span>
+                            <span>{template.name}</span>
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -490,11 +607,15 @@ export default function App() {
                 <div className="text-gray-600">Your Today's Rate</div>
               </div>
               <div className="bg-white rounded-xl shadow-sm p-6 text-center">
-                <div className="text-2xl font-bold text-green-600 mb-1">{Math.round(allUsersProgress.reduce((acc, u) => acc + u.percentage, 0) / (allUsersProgress.length || 1))}%</div>
+                <div className="text-2xl font-bold text-green-600 mb-1">
+                  {Math.round(allUsersProgress.reduce((acc, u) => acc + u.percentage, 0) / (allUsersProgress.length || 1))}%
+                </div>
                 <div className="text-gray-600">Team Average</div>
               </div>
               <div className="bg-white rounded-xl shadow-sm p-6 text-center">
-                <div className="text-2xl font-bold text-purple-600 mb-1">{weeklyData.reduce((acc, day) => acc + day.completed, 0)}</div>
+                <div className="text-2xl font-bold text-purple-600 mb-1">
+                  {weeklyData.reduce((acc, day) => acc + day.completed, 0)}
+                </div>
                 <div className="text-gray-600">Tasks This Week</div>
               </div>
             </div>
