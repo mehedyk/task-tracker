@@ -1,3 +1,4 @@
+/* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,4 +7,409 @@ body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%);
+}
+
+/* Islamic-inspired animations */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes slideIn {
+  from { 
+    opacity: 0; 
+    transform: translateX(-20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes bounce {
+  0%, 100% { 
+    transform: translateY(0); 
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1); 
+  }
+  50% { 
+    transform: translateY(-10px); 
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1); 
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { 
+    opacity: 1; 
+  }
+  50% { 
+    opacity: 0.5; 
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6), 0 0 30px rgba(99, 102, 241, 0.4);
+  }
+}
+
+@keyframes taskComplete {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+    background-color: #10B981;
+    color: white;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes islamicPattern {
+  0% { 
+    transform: rotate(0deg) scale(1); 
+  }
+  25% { 
+    transform: rotate(90deg) scale(1.05); 
+  }
+  50% { 
+    transform: rotate(180deg) scale(1); 
+  }
+  75% { 
+    transform: rotate(270deg) scale(1.05); 
+  }
+  100% { 
+    transform: rotate(360deg) scale(1); 
+  }
+}
+
+/* Animation Classes */
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.animate-taskComplete {
+  animation: taskComplete 0.6s ease-in-out;
+}
+
+.animate-islamicPattern {
+  animation: islamicPattern 3s ease-in-out infinite;
+}
+
+/* Enhanced Input Styles */
+.input-error {
+  @apply border-red-500 bg-red-50 focus:ring-red-200 animate-shake;
+}
+
+.input-success {
+  @apply border-green-500 bg-green-50 focus:ring-green-200;
+}
+
+/* Task Completion Animations */
+.task-completed {
+  @apply bg-green-50 border-green-200;
+  animation: taskComplete 0.6s ease-in-out;
+}
+
+.task-completed .task-text {
+  @apply line-through text-green-600;
+}
+
+.task-pending {
+  @apply hover:bg-indigo-50 hover:border-indigo-200 transition-all duration-300;
+}
+
+/* Islamic Pattern Backgrounds */
+.islamic-pattern {
+  background-image: 
+    radial-gradient(circle at 25% 25%, #e0e7ff 2px, transparent 2px),
+    radial-gradient(circle at 75% 75%, #e0e7ff 2px, transparent 2px);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+}
+
+/* Enhanced Button Animations */
+.btn-primary {
+  @apply bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium py-3 px-6 rounded-lg;
+  @apply transform transition-all duration-300 hover:scale-105 hover:shadow-lg;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, #4f46e5, #7c3aed, #4f46e5);
+  background-size: 400% 400%;
+  animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.btn-secondary {
+  @apply bg-white text-indigo-600 border-2 border-indigo-600 font-medium py-2 px-4 rounded-lg;
+  @apply transform transition-all duration-200 hover:scale-105 hover:bg-indigo-600 hover:text-white;
+}
+
+/* Card Hover Effects */
+.card-hover {
+  @apply transform transition-all duration-300 hover:scale-102 hover:shadow-xl;
+}
+
+.card-hover:hover {
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(99, 102, 241, 0.1);
+}
+
+/* Progress Bar Animations */
+.progress-bar {
+  @apply h-3 rounded-full transition-all duration-1000 ease-out;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4);
+  background-size: 200% 100%;
+  animation: gradientMove 2s ease-in-out infinite;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Notification Animations */
+.notification-enter {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.notification-exit {
+  animation: slideOutRight 0.3s ease-in;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Loading Animations */
+.loading-spinner {
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #6366f1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-dots {
+  display: inline-block;
+}
+
+.loading-dots::after {
+  content: '';
+  animation: dots 2s linear infinite;
+}
+
+@keyframes dots {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 100% { content: '...'; }
+}
+
+/* Islamic Calligraphy Effect */
+.calligraphy-text {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 300;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(45deg, #6366f1, #8b5cf6, #06b6d4);
+  background-size: 200% 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 3s ease infinite;
+}
+
+/* Team Member Card Animations */
+.team-card {
+  @apply transform transition-all duration-300;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.team-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.15);
+}
+
+.team-card.current-user {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  border: 2px solid #6366f1;
+}
+
+/* Streak Counter Animation */
+.streak-counter {
+  @apply text-2xl font-bold;
+  animation: countUp 0.5s ease-out;
+}
+
+@keyframes countUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Category Icon Animations */
+.category-icon {
+  @apply inline-block transform transition-all duration-300;
+}
+
+.category-icon:hover {
+  animation: bounce 0.6s ease-in-out;
+}
+
+.category-completed .category-icon {
+  animation: islamicPattern 2s ease-in-out;
+}
+
+/* Responsive Design Helpers */
+@media (max-width: 768px) {
+  .mobile-optimize {
+    @apply text-sm px-2 py-1;
+  }
+  
+  .card-hover {
+    @apply hover:scale-101;
+  }
+}
+
+/* Accessibility Enhancements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus Styles for Keyboard Navigation */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #6366f1, #8b5cf6);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, #4f46e5, #7c3aed);
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-optimize {
+    @apply text-black bg-white shadow-none;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .btn-primary {
+    @apply bg-black text-white border-2 border-black;
+  }
+  
+  .task-completed {
+    @apply bg-green-100 border-2 border-green-800;
+  }
+}
+
+/* Islamic Theme Colors */
+:root {
+  --islamic-green: #10b981;
+  --islamic-gold: #f59e0b;
+  --islamic-blue: #3b82f6;
+  --prayer-time: #6366f1;
+  --quran-text: #1f2937;
+  --masjid-color: #7c3aed;
 }
