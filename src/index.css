@@ -1,4 +1,4 @@
-/* src/index.css - Fixed again */
+/* src/index.css - Fixed with standard Tailwind classes only */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -156,7 +156,7 @@ body {
   }
 }
 
-/* Animation Classes */
+/* Animation Classes using standard naming */
 .animate-fadeIn {
   animation: fadeIn 0.5s ease-out forwards;
 }
@@ -189,18 +189,6 @@ body {
   animation: islamicPattern 3s ease-in-out infinite;
 }
 
-/* Enhanced Input Styles */
-.input-error {
-  border-color: #ef4444;
-  background-color: #fef2f2;
-  animation: shake 0.5s ease-in-out;
-}
-
-.input-success {
-  border-color: #10b981;
-  background-color: #f0fdf4;
-}
-
 /* Task Completion Animations */
 .task-completed {
   background-color: #f0fdf4;
@@ -220,15 +208,6 @@ body {
 .task-pending:hover {
   background-color: #eef2ff;
   border-color: #c7d2fe;
-}
-
-/* Islamic Pattern Backgrounds */
-.islamic-pattern {
-  background-image: 
-    radial-gradient(circle at 25% 25%, #e0e7ff 2px, transparent 2px),
-    radial-gradient(circle at 75% 75%, #e0e7ff 2px, transparent 2px);
-  background-size: 20px 20px;
-  background-position: 0 0, 10px 10px;
 }
 
 /* Enhanced Button Animations */
@@ -295,15 +274,6 @@ body {
   background: linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4);
   background-size: 200% 100%;
   animation: gradientMove 2s ease-in-out infinite;
-}
-
-/* Notification Animations */
-.notification-enter {
-  animation: slideInRight 0.3s ease-out;
-}
-
-.notification-exit {
-  animation: slideOutRight 0.3s ease-in;
 }
 
 /* Loading Animations */
@@ -380,27 +350,6 @@ body {
   animation: islamicPattern 2s ease-in-out;
 }
 
-/* Responsive Design Helpers */
-@media (max-width: 768px) {
-  .mobile-optimize {
-    font-size: 0.875rem;
-    padding: 0.5rem;
-  }
-  
-  .card-hover:hover {
-    transform: scale(1.01);
-  }
-}
-
-/* Accessibility Enhancements */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
 /* Focus Styles for Keyboard Navigation */
 .focus-ring:focus {
   outline: 2px solid transparent;
@@ -427,30 +376,24 @@ body {
   background: linear-gradient(45deg, #4f46e5, #7c3aed);
 }
 
-/* Print Styles */
-@media print {
-  .no-print {
-    display: none !important;
+/* Responsive Design Helpers */
+@media (max-width: 768px) {
+  .mobile-optimize {
+    font-size: 0.875rem;
+    padding: 0.5rem;
   }
   
-  .print-optimize {
-    color: black;
-    background-color: white;
-    box-shadow: none;
+  .card-hover:hover {
+    transform: scale(1.01);
   }
 }
 
-/* High Contrast Mode Support */
-@media (prefers-contrast: high) {
-  .btn-primary {
-    background-color: black;
-    color: white;
-    border: 2px solid black;
-  }
-  
-  .task-completed {
-    background-color: #f0fdf4;
-    border: 2px solid #166534;
+/* Accessibility Enhancements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -462,19 +405,4 @@ body {
   --prayer-time: #6366f1;
   --quran-text: #1f2937;
   --masjid-color: #7c3aed;
-}
-
-/* Additional utility classes that are safe */
-.hover-scale-105:hover {
-  transform: scale(1.05);
-}
-
-.hover-scale-110:hover {
-  transform: scale(1.1);
-}
-
-.transition-transform {
-  transition-property: transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
 }
