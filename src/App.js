@@ -1,4 +1,4 @@
-// src/App.js
+// src/App.js - FIXED with standard Tailwind classes only
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
 import { taskTemplates } from './config/taskTemplates';
@@ -425,12 +425,12 @@ export default function App() {
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-        <div className="auth-form bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300 hover:shadow-3xl">
+        <div className="auth-form bg-white bg-opacity-90 rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300 hover:shadow-3xl">
           <div className="text-center mb-8">
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
               <Target className="h-8 w-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-3xl font-bold mb-2">
               Task Tracker
             </h1>
             <p className="text-gray-600">Track your Islamic lifestyle & progress</p>
@@ -604,7 +604,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50 backdrop-blur-sm bg-white/95">
+      <header className="bg-white shadow-sm border-b sticky top-0 z-50 bg-opacity-95">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
@@ -673,13 +673,13 @@ export default function App() {
 
             <div className="space-y-6">
               {/* Progress Summary */}
-              <div className="bg-white rounded-xl shadow-sm p-6 transform transition-all duration-300 hover:shadow-lg">
+              <div className="bg-white rounded-xl shadow-sm p-6 card-hover">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                   <Target className="h-5 w-5 text-indigo-500 mr-2" />
                   Today's Progress
                 </h3>
                 <div className="text-center mb-4">
-                  <div className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">
+                  <div className="text-3xl font-bold gradient-text mb-1">
                     {completionRate}%
                   </div>
                   <div className="text-sm text-gray-600">{completedToday} of {totalTasks} completed</div>
@@ -687,7 +687,7 @@ export default function App() {
 
                 <div className="w-full bg-gray-200 rounded-full h-3 mb-4 overflow-hidden">
                   <div 
-                    className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out transform origin-left" 
+                    className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out" 
                     style={{ width: `${completionRate}%` }}
                   />
                 </div>
@@ -716,7 +716,7 @@ export default function App() {
               </div>
 
               {/* Quick Task Categories Overview */}
-              <div className="bg-white rounded-xl shadow-sm p-6 transform transition-all duration-300 hover:shadow-lg">
+              <div className="bg-white rounded-xl shadow-sm p-6 card-hover">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                   <Award className="h-5 w-5 text-yellow-500 mr-2" />
                   Categories
@@ -744,7 +744,7 @@ export default function App() {
                     return (
                       <div 
                         key={template.id} 
-                        className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50 transition-all duration-300 cursor-pointer transform hover:scale-102"
+                        className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50 transition-all duration-300 cursor-pointer transform hover:scale-105"
                         onClick={() => {
                           // Scroll to task in the main list
                           const taskElement = document.querySelector(`[data-task-id="${template.id}"]`);
@@ -792,7 +792,7 @@ export default function App() {
               </div>
 
               {/* Quick Stats */}
-              <div className="bg-white rounded-xl shadow-sm p-6 transform transition-all duration-300 hover:shadow-lg">
+              <div className="bg-white rounded-xl shadow-sm p-6 card-hover">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Today's Stats</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-3 bg-green-50 rounded-lg">
@@ -849,7 +849,7 @@ export default function App() {
 
                     <div className="w-full bg-gray-200 rounded-full h-3 mb-4 overflow-hidden">
                       <div 
-                        className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out transform origin-left" 
+                        className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out" 
                         style={{ width: `${u.percentage}%` }} 
                       />
                     </div>
