@@ -1,4 +1,4 @@
-// src/App.js - FIXED with standard Tailwind classes only
+// src/App.js - Islamic Task Tracker - COMPLETE VERSION
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
 import { taskTemplates } from './config/taskTemplates';
@@ -91,7 +91,7 @@ export default function App() {
   const [allUsersProgress, setAllUsersProgress] = useState([]);
   const [weeklyData, setWeeklyData] = useState([]);
 
-  // Auth/UI states with animations
+  // Auth/UI states
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -301,7 +301,7 @@ export default function App() {
     setWeeklyData(week);
   }, [user]);
 
-  // Enhanced auth with validation and animations
+  // Enhanced auth with validation
   const validateForm = () => {
     const errors = {};
     
@@ -372,13 +372,6 @@ export default function App() {
     } catch (err) {
       console.error('Auth error:', err);
       setAuthError(err.message || 'Authentication failed');
-      
-      // Add shake animation to form
-      const form = document.querySelector('.auth-form');
-      if (form) {
-        form.classList.add('animate-shake');
-        setTimeout(() => form.classList.remove('animate-shake'), 500);
-      }
     }
 
     setLoading(false);
@@ -421,22 +414,20 @@ export default function App() {
     await handleToggleTask(subtaskId, newCompleted);
   };
 
-  // Auth screen with enhanced animations
+  // Auth screen
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-        <div className="auth-form bg-white bg-opacity-90 rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300 hover:shadow-3xl">
+        <div className="auth-form bg-white bg-opacity-90 rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300">
           <div className="text-center mb-8">
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
               <Target className="h-8 w-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold mb-2">
-              Task Tracker
-            </h1>
+            <h1 className="text-3xl font-bold mb-2">Task Tracker</h1>
             <p className="text-gray-600">Track your Islamic lifestyle & progress</p>
           </div>
 
-          {/* Error Message with Animation */}
+          {/* Error Message */}
           {authError && (
             <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg animate-slideIn">
               <div className="flex items-center">
@@ -468,14 +459,14 @@ export default function App() {
                   }}
                   className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
                     fieldErrors.name 
-                      ? 'border-red-500 bg-red-50 focus:ring-red-200 animate-shake' 
+                      ? 'border-red-500 bg-red-50 focus:ring-red-200' 
                       : 'border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
                   }`}
                   placeholder="Enter your full name"
                   disabled={loading}
                 />
                 {fieldErrors.name && (
-                  <p className="text-red-500 text-xs mt-1 animate-slideIn">{fieldErrors.name}</p>
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>
                 )}
               </div>
             )}
@@ -493,14 +484,14 @@ export default function App() {
                 }}
                 className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
                   fieldErrors.email 
-                    ? 'border-red-500 bg-red-50 focus:ring-red-200 animate-shake' 
+                    ? 'border-red-500 bg-red-50 focus:ring-red-200' 
                     : 'border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
                 }`}
                 placeholder="your@email.com"
                 disabled={loading}
               />
               {fieldErrors.email && (
-                <p className="text-red-500 text-xs mt-1 animate-slideIn">{fieldErrors.email}</p>
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>
               )}
             </div>
 
@@ -518,7 +509,7 @@ export default function App() {
                   }}
                   className={`w-full px-4 py-3 pr-12 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
                     fieldErrors.password 
-                      ? 'border-red-500 bg-red-50 focus:ring-red-200 animate-shake' 
+                      ? 'border-red-500 bg-red-50 focus:ring-red-200' 
                       : 'border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
                   }`}
                   placeholder="Enter your password"
@@ -534,7 +525,7 @@ export default function App() {
                 </button>
               </div>
               {fieldErrors.password && (
-                <p className="text-red-500 text-xs mt-1 animate-slideIn">{fieldErrors.password}</p>
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>
               )}
             </div>
 
@@ -562,7 +553,7 @@ export default function App() {
                 setFieldErrors({});
                 setMessage(null);
               }} 
-              className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors transform hover:scale-105"
+              className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
               disabled={loading}
             >
               {isLogin ? "Don't have an account? Create one" : "Already have an account? Sign in"}
@@ -620,7 +611,7 @@ export default function App() {
             </div>
             <button 
               onClick={handleSignOut} 
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-all duration-200 hover:scale-105 px-3 py-2 rounded-lg hover:bg-gray-100"
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-all duration-200 px-3 py-2 rounded-lg hover:bg-gray-100"
             >
               <LogOut className="h-5 w-5" />
               <span>Sign Out</span>
@@ -809,7 +800,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Group View - Enhanced */}
+        {/* Group View */}
         {currentPage === 'group' && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-sm p-6">
@@ -903,22 +894,3 @@ export default function App() {
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Reports - Enhanced */}
-        {currentPage === 'reports' && (
-          <div className="animate-fadeIn">
-            <EnhancedReports 
-              user={user}
-              weeklyData={weeklyData}
-              allUsersProgress={allUsersProgress}
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
