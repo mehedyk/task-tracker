@@ -67,3 +67,18 @@ export const taskTemplates = [
     ]
   }
 ];
+
+// Helper function to get template by id
+export const getTemplateById = (id) => {
+  return taskTemplates.find(template => template.id === id);
+};
+
+// Helper function to get all simple tasks
+export const getSimpleTasks = () => {
+  return taskTemplates.filter(template => template.type === 'simple');
+};
+
+// Helper function to get all expandable tasks
+export const getExpandableTasks = () => {
+  return taskTemplates.filter(template => template.type.includes('expandable'));
+};
