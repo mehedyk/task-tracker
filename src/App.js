@@ -1,4 +1,4 @@
-// src/App.js - Islamic Task Tracker - COMPLETE VERSION
+// src/App.js - FIXED JSX
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
 import { taskTemplates } from './config/taskTemplates';
@@ -16,7 +16,8 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  Award
+  Award,
+  ExternalLink
 } from 'lucide-react';
 import {
   LineChart,
@@ -239,8 +240,15 @@ export default function App() {
         const completedMainTasks = mainTasks.filter(t => {
           if (t.task_type === 'simple') return t.completed;
           
-          // For expandable tasks, check if all subtasks are completed
+          // For expandable tasks, check completion logic
           const subtasks = userTasks.filter(st => st.parent_id === t.task_id);
+          
+          // Special logic for Academic/IT Stuff (coding) - only need one subtask completed
+          if (t.task_id === 'coding') {
+            return subtasks.length > 0 && subtasks.some(st => st.completed);
+          }
+          
+          // For other expandable tasks (like Salah), need all subtasks completed
           return subtasks.length > 0 && subtasks.every(st => st.completed);
         });
         
@@ -283,6 +291,13 @@ export default function App() {
         if (t.task_type === 'simple') return t.completed;
         
         const subtasks = (tasksOnDay || []).filter(st => st.parent_id === t.task_id);
+        
+        // Special logic for Academic/IT Stuff
+        if (t.task_id === 'coding') {
+          return subtasks.length > 0 && subtasks.some(st => st.completed);
+        }
+        
+        // For other tasks, need all subtasks completed
         return subtasks.length > 0 && subtasks.every(st => st.completed);
       });
       
@@ -414,161 +429,188 @@ export default function App() {
     await handleToggleTask(subtaskId, newCompleted);
   };
 
+  // Footer Component
+  const Footer = () => (
+    <footer className="bg-white border-t mt-12 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-center items-center space-x-2 text-sm text-gray-600">
+          <span>A</span>
+          <a 
+            href="https://github.com/mehedyk" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center space-x-1 text-indigo-600 hover:text-indigo-800 font-medium transition-colors duration-200 hover:underline"
+          >
+            <span>@mehedyk</span>
+            <ExternalLink className="h-3 w-3" />
+          </a>
+          <span>PRODUCT</span>
+        </div>
+        <div className="text-center text-xs text-gray-500 mt-2">
+          Islamic Task Tracker • Built with ❤️ for the Ummah
+        </div>
+      </div>
+    </footer>
+  );
+
   // Auth screen
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-        <div className="auth-form bg-white bg-opacity-90 rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300">
-          <div className="text-center mb-8">
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-              <Target className="h-8 w-8 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold mb-2">Task Tracker</h1>
-            <p className="text-gray-600">Track your Islamic lifestyle & progress</p>
-          </div>
-
-          {/* Error Message */}
-          {authError && (
-            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg animate-slideIn">
-              <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
-                <p className="text-red-700 text-sm font-medium">{authError}</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col">
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="auth-form bg-white bg-opacity-90 rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300">
+            <div className="text-center mb-8">
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <Target className="h-8 w-8 text-white" />
               </div>
+              <h1 className="text-3xl font-bold mb-2">Task Tracker</h1>
+              <p className="text-gray-600">Track your Islamic lifestyle & progress</p>
             </div>
-          )}
 
-          {/* Success Message */}
-          {message && !authError && (
-            <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg animate-slideIn">
-              <p className="text-green-700 text-sm font-medium">{message}</p>
-            </div>
-          )}
-
-          <div className="space-y-6">
-            {!isLogin && (
-              <div className="transform transition-all duration-300">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    if (fieldErrors.name) {
-                      setFieldErrors(prev => ({ ...prev, name: '' }));
-                    }
-                  }}
-                  className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
-                    fieldErrors.name 
-                      ? 'border-red-500 bg-red-50 focus:ring-red-200' 
-                      : 'border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
-                  }`}
-                  placeholder="Enter your full name"
-                  disabled={loading}
-                />
-                {fieldErrors.name && (
-                  <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>
-                )}
+            {/* Error Message */}
+            {authError && (
+              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg animate-slideIn">
+                <div className="flex items-center">
+                  <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
+                  <p className="text-red-700 text-sm font-medium">{authError}</p>
+                </div>
               </div>
             )}
 
-            <div className="transform transition-all duration-300">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value.toLowerCase());
-                  if (fieldErrors.email) {
-                    setFieldErrors(prev => ({ ...prev, email: '' }));
-                  }
-                }}
-                className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
-                  fieldErrors.email 
-                    ? 'border-red-500 bg-red-50 focus:ring-red-200' 
-                    : 'border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
-                }`}
-                placeholder="your@email.com"
-                disabled={loading}
-              />
-              {fieldErrors.email && (
-                <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>
-              )}
-            </div>
+            {/* Success Message */}
+            {message && !authError && (
+              <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg animate-slideIn">
+                <p className="text-green-700 text-sm font-medium">{message}</p>
+              </div>
+            )}
 
-            <div className="transform transition-all duration-300">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-              <div className="relative">
+            <div className="space-y-6">
+              {!isLogin && (
+                <div className="transform transition-all duration-300">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (fieldErrors.name) {
+                        setFieldErrors(prev => ({ ...prev, name: '' }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
+                      fieldErrors.name 
+                        ? 'border-red-500 bg-red-50 focus:ring-red-200' 
+                        : 'border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
+                    }`}
+                    placeholder="Enter your full name"
+                    disabled={loading}
+                  />
+                  {fieldErrors.name && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>
+                  )}
+                </div>
+              )}
+
+              <div className="transform transition-all duration-300">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                 <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
+                  type="email"
+                  value={email}
                   onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (fieldErrors.password) {
-                      setFieldErrors(prev => ({ ...prev, password: '' }));
+                    setEmail(e.target.value.toLowerCase());
+                    if (fieldErrors.email) {
+                      setFieldErrors(prev => ({ ...prev, email: '' }));
                     }
                   }}
-                  className={`w-full px-4 py-3 pr-12 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
-                    fieldErrors.password 
+                  className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
+                    fieldErrors.email 
                       ? 'border-red-500 bg-red-50 focus:ring-red-200' 
                       : 'border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
                   }`}
-                  placeholder="Enter your password"
+                  placeholder="your@email.com"
                   disabled={loading}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  disabled={loading}
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
+                {fieldErrors.email && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>
+                )}
               </div>
-              {fieldErrors.password && (
-                <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>
-              )}
+
+              <div className="transform transition-all duration-300">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (fieldErrors.password) {
+                        setFieldErrors(prev => ({ ...prev, password: '' }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 pr-12 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
+                      fieldErrors.password 
+                        ? 'border-red-500 bg-red-50 focus:ring-red-200' 
+                        : 'border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
+                    }`}
+                    placeholder="Enter your password"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    disabled={loading}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+                {fieldErrors.password && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>
+                )}
+              </div>
+
+              <button
+                onClick={handleAuth}
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    {isLogin ? 'Signing In...' : 'Creating Account...'}
+                  </div>
+                ) : (
+                  isLogin ? 'Sign In' : 'Create Account'
+                )}
+              </button>
             </div>
 
-            <button
-              onClick={handleAuth}
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  {isLogin ? 'Signing In...' : 'Creating Account...'}
-                </div>
-              ) : (
-                isLogin ? 'Sign In' : 'Create Account'
-              )}
-            </button>
-          </div>
+            <div className="mt-6 text-center">
+              <button 
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setAuthError('');
+                  setFieldErrors({});
+                  setMessage(null);
+                }} 
+                className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+                disabled={loading}
+              >
+                {isLogin ? "Don't have an account? Create one" : "Already have an account? Sign in"}
+              </button>
+            </div>
 
-          <div className="mt-6 text-center">
-            <button 
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setAuthError('');
-                setFieldErrors({});
-                setMessage(null);
-              }} 
-              className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
-              disabled={loading}
-            >
-              {isLogin ? "Don't have an account? Create one" : "Already have an account? Sign in"}
-            </button>
-          </div>
-
-          <div className="mt-8 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2 font-medium">🌟 Islamic Life Tracker</p>
-            <div className="text-xs space-y-1 text-gray-500">
-              <div>• Track daily Salah & Islamic practices</div>
-              <div>• Code & fitness progress monitoring</div>
-              <div>• Team collaboration & motivation</div>
+            <div className="mt-8 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-2 font-medium">🌟 Islamic Life Tracker</p>
+              <div className="text-xs space-y-1 text-gray-500">
+                <div>• Track daily Salah & Islamic practices</div>
+                <div>• Academic & IT progress monitoring</div>
+                <div>• Team collaboration & motivation</div>
+              </div>
             </div>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -578,8 +620,15 @@ export default function App() {
   const completedMainTasks = mainTasks.filter(t => {
     if (t.task_type === 'simple') return t.completed;
     
-    // For expandable tasks, check if all subtasks are completed
+    // For expandable tasks, check completion logic
     const subtasks = tasks.filter(st => st.parent_id === t.task_id);
+    
+    // Special logic for Academic/IT Stuff - only need one subtask completed
+    if (t.task_id === 'coding') {
+      return subtasks.length > 0 && subtasks.some(st => st.completed);
+    }
+    
+    // For other tasks, need all subtasks completed
     return subtasks.length > 0 && subtasks.every(st => st.completed);
   });
 
@@ -593,7 +642,7 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-50 bg-opacity-95">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -620,277 +669,318 @@ export default function App() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Navigation */}
-        <nav className="flex space-x-1 mb-8">
-          {[
-            { id: 'dashboard', label: 'My Tasks', icon: CheckCircle }, 
-            { id: 'group', label: 'Team Progress', icon: Users }, 
-            { id: 'reports', label: 'Reports', icon: BarChart3 }
-          ].map(({ id, label, icon: Icon }) => (
-            <button 
-              key={id} 
-              onClick={() => setCurrentPage(id)} 
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 ${
-                currentPage === id 
-                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg' 
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-indigo-600'
-              }`}
-            >
-              <Icon className="h-5 w-5" />
-              <span>{label}</span>
-            </button>
-          ))}
-        </nav>
+      <div className="flex-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Navigation */}
+          <nav className="flex space-x-1 mb-8">
+            {[
+              { id: 'dashboard', label: 'My Tasks', icon: CheckCircle }, 
+              { id: 'group', label: 'Team Progress', icon: Users }, 
+              { id: 'reports', label: 'Reports', icon: BarChart3 }
+            ].map(({ id, label, icon: Icon }) => (
+              <button 
+                key={id} 
+                onClick={() => setCurrentPage(id)} 
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 ${
+                  currentPage === id 
+                    ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg' 
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-indigo-600'
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                <span>{label}</span>
+              </button>
+            ))}
+          </nav>
 
-        {/* Success/Error Messages */}
-        {message && (
-          <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg animate-slideIn">
-            <p className="text-blue-700 font-medium">{message}</p>
-          </div>
-        )}
+          {/* Success/Error Messages */}
+          {message && (
+            <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg animate-slideIn">
+              <p className="text-blue-700 font-medium">{message}</p>
+            </div>
+          )}
 
-        {/* Dashboard */}
-        {currentPage === 'dashboard' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <EnhancedTaskList 
-                tasks={tasks}
-                onToggleTask={handleToggleTask}
-                onToggleSubtask={handleToggleSubtask}
-                loading={tasksLoading}
+          {/* Dashboard */}
+          {currentPage === 'dashboard' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <EnhancedTaskList 
+                  tasks={tasks}
+                  onToggleTask={handleToggleTask}
+                  onToggleSubtask={handleToggleSubtask}
+                  loading={tasksLoading}
+                />
+              </div>
+
+              <div className="space-y-6">
+                {/* Progress Summary */}
+                <div className="bg-white rounded-xl shadow-sm p-6 card-hover">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                    <Target className="h-5 w-5 text-indigo-500 mr-2" />
+                    Today's Progress
+                  </h3>
+                  <div className="text-center mb-4">
+                    <div className="text-3xl font-bold gradient-text mb-1">
+                      {completionRate}%
+                    </div>
+                    <div className="text-sm text-gray-600">{completedToday} of {totalTasks} completed</div>
+                  </div>
+
+                  <div className="w-full bg-gray-200 rounded-full h-3 mb-4 overflow-hidden">
+                    <div 
+                      className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out" 
+                      style={{ width: `${completionRate}%` }}
+                    />
+                  </div>
+
+                  <div className="h-32">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={pieData} cx="50%" cy="50%" innerRadius={25} outerRadius={50} dataKey="value">
+                          {pieData.map((entry, index) => <Cell key={index} fill={entry.color} />)}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Motivational Message */}
+                  <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
+                    <p className="text-sm text-center font-medium">
+                      {completionRate === 100 ? '🎉 Alhamdulillah! Perfect day!' :
+                       completionRate >= 75 ? '💪 Great progress! Keep it up!' :
+                       completionRate >= 50 ? '🌱 Good start! Push forward!' :
+                       completionRate > 0 ? '⭐ Every step counts! Continue!' :
+                       '🤲 Bismillah! Let\'s begin today!'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick Task Categories Overview */}
+                <div className="bg-white rounded-xl shadow-sm p-6 card-hover">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                    <Award className="h-5 w-5 text-yellow-500 mr-2" />
+                    Categories
+                  </h3>
+                  <div className="space-y-3">
+                    {taskTemplates.map(template => {
+                      const templateTasks = tasks.filter(t => t.task_id === template.id || t.parent_id === template.id);
+                      const mainTask = templateTasks.find(t => t.task_id === template.id);
+                      
+                      let isCompleted = false;
+                      let progress = 0;
+                      
+                      if (template.type === 'simple') {
+                        isCompleted = mainTask?.completed || false;
+                        progress = isCompleted ? 100 : 0;
+                      } else {
+                        const subtasks = templateTasks.filter(t => t.parent_id === template.id);
+                        if (subtasks.length > 0) {
+                          const completedSubtasks = subtasks.filter(st => st.completed);
+                          
+                          // Special logic for Academic/IT Stuff - only need one subtask
+                          if (template.id === 'coding') {
+                            isCompleted = completedSubtasks.length > 0;
+                            progress = completedSubtasks.length > 0 ? 100 : Math.round((completedSubtasks.length / subtasks.length) * 100);
+                          } else {
+                            // For other tasks like Salah - need all subtasks
+                            isCompleted = completedSubtasks.length === subtasks.length;
+                            progress = Math.round((completedSubtasks.length / subtasks.length) * 100);
+                          }
+                        }
+                      }
+
+                      return (
+                        <div 
+                          key={template.id} 
+                          className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50 transition-all duration-300 cursor-pointer transform hover:scale-105"
+                          onClick={() => {
+                            // Scroll to task in the main list
+                            const taskElement = document.querySelector(`[data-task-id="${template.id}"]`);
+                            taskElement?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <span className="text-lg animate-bounce">{template.icon}</span>
+                            <div>
+                              <span className={`text-sm font-medium transition-colors ${
+                                isCompleted ? 'text-green-600' : 'text-gray-700'
+                              }`}>
+                                {template.name}
+                              </span>
+                              {template.type !== 'simple' && (
+                                <div className="text-xs text-gray-500">
+                                  {template.id === 'coding' ? 
+                                    (progress > 0 ? 'Completed!' : `${progress}% complete`) :
+                                    `${progress}% complete`
+                                  }
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {template.type !== 'simple' && (
+                              <div className="w-12 bg-gray-200 rounded-full h-1.5">
+                                <div 
+                                  className="bg-gradient-to-r from-indigo-500 to-purple-600 h-1.5 rounded-full transition-all duration-500"
+                                  style={{ width: `${progress}%` }}
+                                />
+                              </div>
+                            )}
+                            {isCompleted ? (
+                              <CheckCircle className="h-5 w-5 text-green-500 animate-pulse" />
+                            ) : (
+                              <Circle className="h-5 w-5 text-gray-400" />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-gray-100">
+                    <div className="text-center text-xs text-gray-500">
+                      💡 Click categories to jump to tasks
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Stats */}
+                <div className="bg-white rounded-xl shadow-sm p-6 card-hover">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Today's Stats</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">{completedToday}</div>
+                      <div className="text-xs text-green-700">Completed</div>
+                    </div>
+                    <div className="text-center p-3 bg-orange-50 rounded-lg">
+                      <div className="text-2xl font-bold text-orange-600">{totalTasks - completedToday}</div>
+                      <div className="text-xs text-orange-700">Remaining</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Group View */}
+          {currentPage === 'group' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                    <Users className="h-6 w-6 text-indigo-500 mr-2" />
+                    Team Progress - Today
+                  </h2>
+                  <button 
+                    onClick={loadAllUsersProgress}
+                    className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                  >
+                    Refresh
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {allUsersProgress.map((u) => (
+                    <div 
+                      key={u.user.id} 
+                      className={`bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-lg ${
+                        u.user.id === user.id ? 'ring-2 ring-indigo-500 bg-gradient-to-br from-indigo-50 to-purple-50' : ''
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-12 h-12 rounded-full flex items-center justify-center">
+                          <User className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-gray-900 flex items-center">
+                            {u.user.name}
+                            {u.user.id === user.id && <span className="ml-2 text-indigo-500">👤</span>}
+                          </h3>
+                          <p className="text-sm text-gray-600">{u.percentage}% complete</p>
+                        </div>
+                      </div>
+
+                      <div className="w-full bg-gray-200 rounded-full h-3 mb-4 overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out" 
+                          style={{ width: `${u.percentage}%` }} 
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        {taskTemplates.map(template => {
+                          const userTemplateTasks = u.tasks.filter(t => t.task_id === template.id || t.parent_id === template.id);
+                          const mainTask = userTemplateTasks.find(t => t.task_id === template.id);
+                          
+                          let isCompleted = false;
+                          if (template.type === 'simple') {
+                            isCompleted = mainTask?.completed || false;
+                          } else {
+                            const subtasks = userTemplateTasks.filter(t => t.parent_id === template.id);
+                            // Special logic for Academic/IT Stuff
+                            if (template.id === 'coding') {
+                              isCompleted = subtasks.length > 0 && subtasks.some(st => st.completed);
+                            } else {
+                              isCompleted = subtasks.length > 0 && subtasks.every(st => st.completed);
+                            }
+                          }
+
+                          return (
+                            <div key={template.id} className="flex items-center space-x-2 text-sm">
+                              {isCompleted ? (
+                                <CheckCircle className="h-4 w-4 text-green-500 animate-pulse" />
+                              ) : (
+                                <Circle className="h-4 w-4 text-gray-400" />
+                              )}
+                              <span className={`flex items-center space-x-2 ${isCompleted ? 'text-green-600 font-medium' : 'text-gray-700'}`}>
+                                <span>{template.icon}</span>
+                                <span className="truncate">{template.name}</span>
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Performance Badge */}
+                      <div className="mt-4 pt-3 border-t border-gray-200">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500">
+                            {u.completed}/{u.total} tasks
+                          </span>
+                          {u.percentage === 100 && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 animate-pulse">
+                              🏆 Perfect!
+                            </span>
+                          )}
+                          {u.percentage >= 75 && u.percentage < 100 && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              🚀 Excellent
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Reports */}
+          {currentPage === 'reports' && (
+            <div className="animate-fadeIn">
+              <EnhancedReports 
+                user={user}
+                weeklyData={weeklyData}
+                allUsersProgress={allUsersProgress}
               />
             </div>
-
-            <div className="space-y-6">
-              {/* Progress Summary */}
-              <div className="bg-white rounded-xl shadow-sm p-6 card-hover">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                  <Target className="h-5 w-5 text-indigo-500 mr-2" />
-                  Today's Progress
-                </h3>
-                <div className="text-center mb-4">
-                  <div className="text-3xl font-bold gradient-text mb-1">
-                    {completionRate}%
-                  </div>
-                  <div className="text-sm text-gray-600">{completedToday} of {totalTasks} completed</div>
-                </div>
-
-                <div className="w-full bg-gray-200 rounded-full h-3 mb-4 overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out" 
-                    style={{ width: `${completionRate}%` }}
-                  />
-                </div>
-
-                <div className="h-32">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={pieData} cx="50%" cy="50%" innerRadius={25} outerRadius={50} dataKey="value">
-                        {pieData.map((entry, index) => <Cell key={index} fill={entry.color} />)}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Motivational Message */}
-                <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
-                  <p className="text-sm text-center font-medium">
-                    {completionRate === 100 ? '🎉 Alhamdulillah! Perfect day!' :
-                     completionRate >= 75 ? '💪 Great progress! Keep it up!' :
-                     completionRate >= 50 ? '🌱 Good start! Push forward!' :
-                     completionRate > 0 ? '⭐ Every step counts! Continue!' :
-                     '🤲 Bismillah! Let\'s begin today!'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Quick Task Categories Overview */}
-              <div className="bg-white rounded-xl shadow-sm p-6 card-hover">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                  <Award className="h-5 w-5 text-yellow-500 mr-2" />
-                  Categories
-                </h3>
-                <div className="space-y-3">
-                  {taskTemplates.map(template => {
-                    const templateTasks = tasks.filter(t => t.task_id === template.id || t.parent_id === template.id);
-                    const mainTask = templateTasks.find(t => t.task_id === template.id);
-                    
-                    let isCompleted = false;
-                    let progress = 0;
-                    
-                    if (template.type === 'simple') {
-                      isCompleted = mainTask?.completed || false;
-                      progress = isCompleted ? 100 : 0;
-                    } else {
-                      const subtasks = templateTasks.filter(t => t.parent_id === template.id);
-                      if (subtasks.length > 0) {
-                        const completedSubtasks = subtasks.filter(st => st.completed);
-                        isCompleted = completedSubtasks.length === subtasks.length;
-                        progress = Math.round((completedSubtasks.length / subtasks.length) * 100);
-                      }
-                    }
-
-                    return (
-                      <div 
-                        key={template.id} 
-                        className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50 transition-all duration-300 cursor-pointer transform hover:scale-105"
-                        onClick={() => {
-                          // Scroll to task in the main list
-                          const taskElement = document.querySelector(`[data-task-id="${template.id}"]`);
-                          taskElement?.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <span className="text-lg animate-bounce">{template.icon}</span>
-                          <div>
-                            <span className={`text-sm font-medium transition-colors ${
-                              isCompleted ? 'text-green-600' : 'text-gray-700'
-                            }`}>
-                              {template.name}
-                            </span>
-                            {template.type !== 'simple' && (
-                              <div className="text-xs text-gray-500">{progress}% complete</div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {template.type !== 'simple' && (
-                            <div className="w-12 bg-gray-200 rounded-full h-1.5">
-                              <div 
-                                className="bg-gradient-to-r from-indigo-500 to-purple-600 h-1.5 rounded-full transition-all duration-500"
-                                style={{ width: `${progress}%` }}
-                              />
-                            </div>
-                          )}
-                          {isCompleted ? (
-                            <CheckCircle className="h-5 w-5 text-green-500 animate-pulse" />
-                          ) : (
-                            <Circle className="h-5 w-5 text-gray-400" />
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-gray-100">
-                  <div className="text-center text-xs text-gray-500">
-                    💡 Click categories to jump to tasks
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Stats */}
-              <div className="bg-white rounded-xl shadow-sm p-6 card-hover">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Today's Stats</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{completedToday}</div>
-                    <div className="text-xs text-green-700">Completed</div>
-                  </div>
-                  <div className="text-center p-3 bg-orange-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">{totalTasks - completedToday}</div>
-                    <div className="text-xs text-orange-700">Remaining</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Group View */}
-        {currentPage === 'group' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                  <Users className="h-6 w-6 text-indigo-500 mr-2" />
-                  Team Progress - Today
-                </h2>
-                <button 
-                  onClick={loadAllUsersProgress}
-                  className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
-                >
-                  Refresh
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {allUsersProgress.map((u) => (
-                  <div 
-                    key={u.user.id} 
-                    className={`bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-lg ${
-                      u.user.id === user.id ? 'ring-2 ring-indigo-500 bg-gradient-to-br from-indigo-50 to-purple-50' : ''
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-12 h-12 rounded-full flex items-center justify-center">
-                        <User className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-gray-900 flex items-center">
-                          {u.user.name}
-                          {u.user.id === user.id && <span className="ml-2 text-indigo-500">👤</span>}
-                        </h3>
-                        <p className="text-sm text-gray-600">{u.percentage}% complete</p>
-                      </div>
-                    </div>
-
-                    <div className="w-full bg-gray-200 rounded-full h-3 mb-4 overflow-hidden">
-                      <div 
-                        className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out" 
-                        style={{ width: `${u.percentage}%` }} 
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      {taskTemplates.map(template => {
-                        const userTemplateTasks = u.tasks.filter(t => t.task_id === template.id || t.parent_id === template.id);
-                        const mainTask = userTemplateTasks.find(t => t.task_id === template.id);
-                        
-                        let isCompleted = false;
-                        if (template.type === 'simple') {
-                          isCompleted = mainTask?.completed || false;
-                        } else {
-                          const subtasks = userTemplateTasks.filter(t => t.parent_id === template.id);
-                          isCompleted = subtasks.length > 0 && subtasks.every(st => st.completed);
-                        }
-
-                        return (
-                          <div key={template.id} className="flex items-center space-x-2 text-sm">
-                            {isCompleted ? (
-                              <CheckCircle className="h-4 w-4 text-green-500 animate-pulse" />
-                            ) : (
-                              <Circle className="h-4 w-4 text-gray-400" />
-                            )}
-                            <span className={`flex items-center space-x-2 ${isCompleted ? 'text-green-600 font-medium' : 'text-gray-700'}`}>
-                              <span>{template.icon}</span>
-                              <span className="truncate">{template.name}</span>
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Performance Badge */}
-                    <div className="mt-4 pt-3 border-t border-gray-200">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500">
-                          {u.completed}/{u.total} tasks
-                        </span>
-                        {u.percentage === 100 && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 animate-pulse">
-                            🏆 Perfect!
-                          </span>
-                        )}
-                        {u.percentage >= 75 && u.percentage < 100 && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            🚀 Excellent
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+          )}
+        </div>
+      </div>
+      
+      <Footer />
+    </div>
+  );
+}
