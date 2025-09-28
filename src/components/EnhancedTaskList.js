@@ -1,6 +1,6 @@
-// src/components/EnhancedTaskList.js
+// src/components/EnhancedTaskList.js - Updated with Academic/IT Logic
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Calendar, ChevronDown, ChevronRight, ExternalLink, Sparkles } from 'lucide-react';
+import { CheckCircle, Circle, Calendar, ChevronDown, ChevronRight, ExternalLink, Sparkles, Info } from 'lucide-react';
 
 const EnhancedTaskList = ({ tasks, onToggleTask, onToggleSubtask, loading }) => {
   const [expandedTasks, setExpandedTasks] = useState(new Set());
@@ -73,8 +73,14 @@ const EnhancedTaskList = ({ tasks, onToggleTask, onToggleSubtask, loading }) => 
       return task.completed;
     }
     
-    // For expandable tasks, check if all subtasks are completed
+    // For expandable tasks, check if subtasks are completed
     if (task.subtasks && task.subtasks.length > 0) {
+      // Special logic for Academic/IT Stuff - only need one subtask completed
+      if (task.task_id === 'coding') {
+        return task.subtasks.some(subtask => subtask.completed);
+      }
+      
+      // For other tasks, need all subtasks completed
       return task.subtasks.every(subtask => subtask.completed);
     }
     
@@ -89,7 +95,23 @@ const EnhancedTaskList = ({ tasks, onToggleTask, onToggleSubtask, loading }) => 
     if (task.subtasks && task.subtasks.length > 0) {
       const completed = task.subtasks.filter(subtask => subtask.completed).length;
       const total = task.subtasks.length;
-      return { completed, total };
+      
+      // For Academic/IT Stuff, show different stats
+      if (task.task_id === 'coding') {
+        return { 
+          completed, 
+          total, 
+          isAnyOneTask: true,
+          requiresAll: false
+        };
+      }
+      
+      return { 
+        completed, 
+        total, 
+        isAnyOneTask: false,
+        requiresAll: true
+      };
     }
     
     return null;
@@ -209,17 +231,32 @@ const EnhancedTaskList = ({ tasks, onToggleTask, onToggleSubtask, loading }) => 
                           {task.task_name}
                         </span>
                         
+                        {/* Special note for Academic/IT Stuff */}
+                        {task.task_id === 'coding' && (
+                          <div className="flex items-center space-x-1 mt-1">
+                            <Info className="h-3 w-3 text-blue-500" />
+                            <span className="text-xs text-blue-600 font-medium">
+                              Complete any ONE activity below
+                            </span>
+                          </div>
+                        )}
+                        
                         {stats && (
                           <div className="flex items-center space-x-2 mt-1">
                             <span className="text-sm text-gray-500">
-                              {stats.completed} of {stats.total} completed
+                              {stats.isAnyOneTask ? 
+                                (stats.completed > 0 ? 'Activity completed!' : 'Choose any one activity') :
+                                `${stats.completed} of ${stats.total} completed`
+                              }
                             </span>
-                            <div className="w-20 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="progress-bar h-2 rounded-full transition-all duration-1000"
-                                style={{ width: `${(stats.completed / stats.total) * 100}%` }}
-                              />
-                            </div>
+                            {!stats.isAnyOneTask && (
+                              <div className="w-20 bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="progress-bar h-2 rounded-full transition-all duration-1000"
+                                  style={{ width: `${(stats.completed / stats.total) * 100}%` }}
+                                />
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -233,12 +270,21 @@ const EnhancedTaskList = ({ tasks, onToggleTask, onToggleSubtask, loading }) => 
                         </span>
                       )}
                       
-                      {stats && !isCompleted && (
+                      {stats && !isCompleted && !stats.isAnyOneTask && (
                         <div className="text-right">
                           <div className="text-lg font-bold text-indigo-600 streak-counter">
                             {Math.round((stats.completed / stats.total) * 100)}%
                           </div>
                           <div className="text-xs text-gray-500">Progress</div>
+                        </div>
+                      )}
+                      
+                      {stats && !isCompleted && stats.isAnyOneTask && (
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-blue-600 streak-counter">
+                            {stats.completed > 0 ? '✓' : '0/1'}
+                          </div>
+                          <div className="text-xs text-gray-500">Any One</div>
                         </div>
                       )}
                     </div>
@@ -253,10 +299,26 @@ const EnhancedTaskList = ({ tasks, onToggleTask, onToggleSubtask, loading }) => 
                         <div className="h-px bg-gradient-to-r from-indigo-200 to-purple-200 flex-1"></div>
                         <span className="text-xs font-medium text-indigo-600 px-2 py-1 bg-indigo-50 rounded-full">
                           {task.task_name === 'Salah (At Least Qaza)' ? 'Prayer Times' : 
-                           task.task_name === 'Code/IT Stuff' ? 'Platforms' : 'Activities'}
+                           task.task_name === 'Academic/IT Stuff' ? 'Choose Any One Activity' : 
+                           task.task_name === 'Fitness' ? 'Fitness Activities' : 'Activities'}
                         </span>
                         <div className="h-px bg-gradient-to-r from-purple-200 to-indigo-200 flex-1"></div>
                       </div>
+
+                      {/* Special instruction for Academic/IT Stuff */}
+                      {task.task_id === 'coding' && (
+                        <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            <Info className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm font-medium text-blue-800">
+                              Complete any ONE activity below to mark this task as done
+                            </span>
+                          </div>
+                          <p className="text-xs text-blue-600 mt-1">
+                            You don't need to complete all - just pick one that fits your schedule!
+                          </p>
+                        </div>
+                      )}
 
                       {task.subtasks.map((subtask, subIndex) => (
                         <div 
@@ -281,22 +343,31 @@ const EnhancedTaskList = ({ tasks, onToggleTask, onToggleSubtask, loading }) => 
                               )}
                             </button>
                             
-                            <span className={`text-sm font-medium transition-all duration-300 ${
-                              subtask.completed 
-                                ? 'text-green-700 line-through' 
-                                : 'text-gray-700 hover:text-indigo-600'
-                            }`}>
-                              {subtask.task_name}
-                            </span>
-
-                            {subtask.completed && (
-                              <span className="text-xs text-green-600 font-medium animate-fadeIn">
-                                ✓ Done
+                            <div className="flex-1">
+                              <span className={`text-sm font-medium transition-all duration-300 ${
+                                subtask.completed 
+                                  ? 'text-green-700 line-through' 
+                                  : 'text-gray-700 hover:text-indigo-600'
+                              }`}>
+                                {subtask.task_name}
                               </span>
-                            )}
+
+                              {subtask.completed && (
+                                <div className="flex items-center space-x-1 mt-1">
+                                  <span className="text-xs text-green-600 font-medium animate-fadeIn">
+                                    ✓ Completed
+                                  </span>
+                                  {task.task_id === 'coding' && (
+                                    <span className="text-xs text-green-600 font-medium">
+                                      - Task Done!
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
 
-                          {/* Link for coding subtasks */}
+                          {/* Link for coding/academic subtasks */}
                           {subtask.link && (
                             <a
                               href={subtask.link}
@@ -310,6 +381,25 @@ const EnhancedTaskList = ({ tasks, onToggleTask, onToggleSubtask, loading }) => 
                           )}
                         </div>
                       ))}
+
+                      {/* Progress summary for Academic/IT Stuff */}
+                      {task.task_id === 'coding' && (
+                        <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                          <div className="text-center">
+                            <span className="text-sm font-medium text-gray-700">
+                              {task.subtasks.filter(st => st.completed).length > 0 ? (
+                                <span className="text-green-600">
+                                  🎉 Great job! You've completed an activity today!
+                                </span>
+                              ) : (
+                                <span className="text-blue-600">
+                                  📚 Choose any one activity above to complete this task
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
