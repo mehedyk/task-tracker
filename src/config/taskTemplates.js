@@ -1,4 +1,4 @@
-// src/config/taskTemplates.js
+// src/config/taskTemplates.js - Updated with Academic/IT Stuff
 export const taskTemplates = [
   {
     id: 'salah',
@@ -22,27 +22,43 @@ export const taskTemplates = [
   },
   {
     id: 'coding',
-    name: 'Code/IT Stuff',
+    name: 'Academic/IT Stuff',
     type: 'expandable_with_links',
-    icon: '💻',
+    icon: '🎓',
+    description: 'Complete any ONE of these activities to mark as done',
     subtasks: [
       { 
         id: 'beecrowd', 
-        name: 'BeeCrowd', 
+        name: 'BeeCrowd Programming', 
         completed: false,
         link: 'https://github.com/mehedyk/100-BeeCrowd-Problems'
       },
       { 
         id: 'hackerrank', 
-        name: 'HackerRank', 
+        name: 'HackerRank Challenges', 
         completed: false,
         link: 'https://github.com/mehedyk/100-HackerRank-Problems'
       },
       { 
         id: 'codeforces', 
-        name: 'CodeForces', 
+        name: 'CodeForces Contest', 
         completed: false,
         link: 'https://github.com/mehedyk/100-CodeForces-Problems'
+      },
+      { 
+        id: 'study', 
+        name: 'Academic Study (1 hour)', 
+        completed: false
+      },
+      { 
+        id: 'research', 
+        name: 'Research/Learning', 
+        completed: false
+      },
+      { 
+        id: 'project', 
+        name: 'Personal Project Work', 
+        completed: false
       }
     ]
   },
@@ -71,6 +87,24 @@ export const taskTemplates = [
 // Helper function to get template by id
 export const getTemplateById = (id) => {
   return taskTemplates.find(template => template.id === id);
+};
+
+// Helper function to check if task is completed based on its type
+export const isTaskCompleted = (template, tasks) => {
+  if (template.type === 'simple') {
+    const mainTask = tasks.find(t => t.task_id === template.id);
+    return mainTask?.completed || false;
+  }
+  
+  const subtasks = tasks.filter(t => t.parent_id === template.id);
+  
+  // Special logic for Academic/IT Stuff - only need one subtask completed
+  if (template.id === 'coding') {
+    return subtasks.length > 0 && subtasks.some(st => st.completed);
+  }
+  
+  // For other expandable tasks, need all subtasks completed
+  return subtasks.length > 0 && subtasks.every(st => st.completed);
 };
 
 // Helper function to get all simple tasks
