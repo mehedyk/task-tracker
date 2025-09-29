@@ -183,8 +183,8 @@ const TaskTracker = () => {
             <div className="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
               <Target className="h-8 w-8 text-indigo-600" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Task Tracker</h1>
-            <p className="text-gray-600">Track progress with your team</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Task Tracker Taqaddum (تقدّم)</h1>
+            <p className="text-gray-600">Track progress with your team(But when there is no team, isn't being a lone wolf the only choice?)</p>
           </div>
 
           <div className="space-y-6">
@@ -261,7 +261,7 @@ const TaskTracker = () => {
                 <Target className="h-6 w-6 text-indigo-600" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Task Tracker</h1>
+                <h1 className="text-xl font-bold text-gray-900">Task Tracker Taqaddum (تقدّم)</h1>
                 <p className="text-sm text-gray-600">Welcome back, {user.email}!</p>
               </div>
             </div>
