@@ -10,7 +10,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Test connection function (optional)
+// Test connection function
 export const testConnection = async () => {
   try {
     const { data, error } = await supabase.from('tasks').select('count', { count: 'exact', head: true });
