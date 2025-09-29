@@ -447,7 +447,7 @@ export default function App() {
           <span>PRODUCT</span>
         </div>
         <div className="text-center text-xs text-gray-500 mt-2">
-          Islamic Task Tracker • Built with ❤️ for the Ummah
+          Taqaddum (تقدّم) - © 2025
         </div>
       </div>
     </footer>
@@ -463,8 +463,8 @@ export default function App() {
               <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
                 <Target className="h-8 w-8 text-white" />
               </div>
-              <h1 className="text-3xl font-bold mb-2">Task Tracker</h1>
-              <p className="text-gray-600">Track your Islamic lifestyle & progress</p>
+              <h1 className="text-3xl font-bold mb-2">Task Tracker Taqaddum</h1>
+              <p className="text-gray-600">Staying healthy is a responsibility. আলাপ শেষ!</p>
             </div>
 
             {/* Error Message */}
@@ -652,9 +652,9 @@ export default function App() {
                 <Target className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Task Tracker</h1>
+                <h1 className="text-xl font-bold text-gray-900">Task Tracker Taqaddum</h1>
                 <p className="text-sm text-gray-600">
-                  Salaam, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Brother/Sister'}! 🌟
+                  Salaam, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Brother/Sister'}! কি অবস্থা? 🌟
                 </p>
               </div>
             </div>
