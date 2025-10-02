@@ -1,4 +1,4 @@
-// src/App.js - FIXED JSX
+// src/App.js - Dark mode
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
 import { taskTemplates } from './config/taskTemplates';
@@ -17,7 +17,9 @@ import {
   Eye,
   EyeOff,
   Award,
-  ExternalLink
+  ExternalLink,
+  Moon,
+  Sun
 } from 'lucide-react';
 import {
   LineChart,
@@ -54,7 +56,6 @@ const createDailyTasksFromTemplates = (userId, date) => {
         icon: template.icon
       });
     } else {
-      // Create main task
       tasks.push({
         user_id: userId,
         task_id: template.id,
@@ -66,7 +67,6 @@ const createDailyTasksFromTemplates = (userId, date) => {
         is_parent: true
       });
       
-      // Create subtasks
       template.subtasks.forEach(subtask => {
         tasks.push({
           user_id: userId,
@@ -91,6 +91,10 @@ export default function App() {
   const [tasks, setTasks] = useState([]);
   const [allUsersProgress, setAllUsersProgress] = useState([]);
   const [weeklyData, setWeeklyData] = useState([]);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
 
   // Auth/UI states
   const [isLogin, setIsLogin] = useState(true);
@@ -105,6 +109,16 @@ export default function App() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   const today = isoDateString();
+
+  // Dark mode effect
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
 
   useEffect(() => {
     let mounted = true;
@@ -146,7 +160,6 @@ export default function App() {
       return;
     }
 
-    // Check if we already have all the main task templates
     const existingTaskIds = new Set(existing?.map(t => t.task_id) || []);
     const needsCreation = taskTemplates.some(template => !existingTaskIds.has(template.id));
 
@@ -155,7 +168,6 @@ export default function App() {
       return;
     }
 
-    // Create tasks from templates
     const dailyTasks = createDailyTasksFromTemplates(uid, dateStr);
     console.log('Creating tasks:', dailyTasks);
     
@@ -173,7 +185,6 @@ export default function App() {
     
     console.log('Loading tasks for user:', user.id);
     
-    // Ensure profile exists
     const { error: profileErr } = await supabase
       .from('profiles')
       .upsert({ 
@@ -183,7 +194,6 @@ export default function App() {
     
     if (profileErr) console.warn('Profile upsert warning:', profileErr);
     
-    // Ensure daily tasks exist
     await ensureDailyTasks(user.id, today);
 
     const { data, error } = await supabase
@@ -202,7 +212,6 @@ export default function App() {
       setTasks(data || []);
       if (!data || data.length === 0) {
         setMessage('🔄 Creating your daily tasks...');
-        // Force task creation
         setTimeout(() => {
           ensureDailyTasks(user.id, today).then(() => {
             loadTasks();
@@ -235,20 +244,16 @@ export default function App() {
       progress = profiles.map((p) => {
         const userTasks = (tasksToday || []).filter((t) => t.user_id === p.id);
         
-        // Calculate completion based on main tasks only
         const mainTasks = userTasks.filter(t => t.is_parent || t.task_type === 'simple');
         const completedMainTasks = mainTasks.filter(t => {
           if (t.task_type === 'simple') return t.completed;
           
-          // For expandable tasks, check completion logic
           const subtasks = userTasks.filter(st => st.parent_id === t.task_id);
           
-          // Special logic for Academic/IT Stuff (coding) - only need one subtask completed
           if (t.task_id === 'coding') {
             return subtasks.length > 0 && subtasks.some(st => st.completed);
           }
           
-          // For other expandable tasks (like Salah), need all subtasks completed
           return subtasks.length > 0 && subtasks.every(st => st.completed);
         });
         
@@ -292,12 +297,10 @@ export default function App() {
         
         const subtasks = (tasksOnDay || []).filter(st => st.parent_id === t.task_id);
         
-        // Special logic for Academic/IT Stuff
         if (t.task_id === 'coding') {
           return subtasks.length > 0 && subtasks.some(st => st.completed);
         }
         
-        // For other tasks, need all subtasks completed
         return subtasks.length > 0 && subtasks.every(st => st.completed);
       });
       
@@ -316,7 +319,6 @@ export default function App() {
     setWeeklyData(week);
   }, [user]);
 
-  // Enhanced auth with validation
   const validateForm = () => {
     const errors = {};
     
@@ -358,12 +360,31 @@ export default function App() {
         setUser(data.user);
         setMessage('✅ Welcome back!');
       } else {
+        // Check if email already exists
+        const { data: existingUser } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', (await supabase.auth.getUser()).data.user?.id)
+          .single();
+
         const { data, error } = await supabase.auth.signUp({ 
           email: email.trim(), 
           password, 
           options: { data: { full_name: name.trim() } } 
         });
-        if (error) throw error;
+        
+        if (error) {
+          // Check if it's a "user already exists" error
+          if (error.message.includes('already registered') || error.message.includes('already exists')) {
+            throw new Error('This email is already registered. Please sign in instead.');
+          }
+          throw error;
+        }
+        
+        // Check if user was actually created (not just email confirmation sent)
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
+          throw new Error('This email is already registered. Please sign in instead.');
+        }
         
         if (data.user && !data.session) {
           setMessage('✅ Account created! Please check your email to verify your account.');
@@ -378,7 +399,6 @@ export default function App() {
         }
       }
       
-      // Clear form
       setEmail('');
       setPassword('');
       setName('');
@@ -401,7 +421,6 @@ export default function App() {
   };
 
   const handleToggleTask = async (taskId, newCompleted) => {
-    // Optimistic update
     setTasks(prev => prev.map(task => 
       task.id === taskId ? { ...task, completed: newCompleted } : task
     ));
@@ -413,7 +432,6 @@ export default function App() {
       
     if (error) {
       console.error('Update task error:', error);
-      // Revert on error
       setTasks(prev => prev.map(task => 
         task.id === taskId ? { ...task, completed: !newCompleted } : task
       ));
@@ -421,7 +439,6 @@ export default function App() {
       return;
     }
     
-    // Reload progress data
     loadAllUsersProgress();
   };
 
@@ -431,23 +448,25 @@ export default function App() {
 
   // Footer Component
   const Footer = () => (
-    <footer className="bg-white border-t mt-12 py-6">
+    <footer className={`border-t mt-12 py-6 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-center items-center space-x-2 text-sm text-gray-600">
+        <div className={`flex justify-center items-center space-x-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
           <span>A</span>
           <a 
             href="https://github.com/mehedyk" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="flex items-center space-x-1 text-indigo-600 hover:text-indigo-800 font-medium transition-colors duration-200 hover:underline"
+            className={`flex items-center space-x-1 font-medium transition-colors duration-200 hover:underline ${
+              darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-800'
+            }`}
           >
             <span>@mehedyk</span>
             <ExternalLink className="h-3 w-3" />
           </a>
           <span>PRODUCT</span>
         </div>
-        <div className="text-center text-xs text-gray-500 mt-2">
-          Taqaddum (تقدّم) - © 2025
+        <div className={`text-center text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+          Islamic Task Tracker • Built with ❤️ for the Ummah
         </div>
       </div>
     </footer>
@@ -456,38 +475,68 @@ export default function App() {
   // Auth screen
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col">
+      <div className={`min-h-screen flex flex-col ${
+        darkMode 
+          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+          : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
+      }`}>
+        {/* Dark Mode Toggle */}
+        <div className="absolute top-4 right-4 z-50">
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className={`p-3 rounded-full transition-all duration-300 ${
+              darkMode 
+                ? 'bg-gray-700 hover:bg-gray-600 text-yellow-300' 
+                : 'bg-white hover:bg-gray-100 text-gray-700'
+            } shadow-lg`}
+          >
+            {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
+        </div>
+
         <div className="flex-1 flex items-center justify-center p-4">
-          <div className="auth-form bg-white bg-opacity-90 rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300">
+          <div className={`auth-form rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300 ${
+            darkMode ? 'bg-gray-800 bg-opacity-95' : 'bg-white bg-opacity-90'
+          }`}>
             <div className="text-center mb-8">
               <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
                 <Target className="h-8 w-8 text-white" />
               </div>
-              <h1 className="text-3xl font-bold mb-2">Task Tracker Taqaddum</h1>
-              <p className="text-gray-600">Staying healthy is a responsibility. আলাপ শেষ!</p>
+              <h1 className={`text-3xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Task Tracker
+              </h1>
+              <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                Track your Islamic lifestyle & progress
+              </p>
             </div>
 
             {/* Error Message */}
             {authError && (
-              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg animate-slideIn">
+              <div className={`mb-6 p-4 rounded-lg animate-slideIn ${
+                darkMode ? 'bg-red-900 bg-opacity-50 border-l-4 border-red-500' : 'bg-red-50 border-l-4 border-red-500'
+              }`}>
                 <div className="flex items-center">
-                  <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
-                  <p className="text-red-700 text-sm font-medium">{authError}</p>
+                  <AlertCircle className={`h-5 w-5 mr-3 ${darkMode ? 'text-red-400' : 'text-red-500'}`} />
+                  <p className={`text-sm font-medium ${darkMode ? 'text-red-300' : 'text-red-700'}`}>{authError}</p>
                 </div>
               </div>
             )}
 
             {/* Success Message */}
             {message && !authError && (
-              <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg animate-slideIn">
-                <p className="text-green-700 text-sm font-medium">{message}</p>
+              <div className={`mb-6 p-4 rounded-lg animate-slideIn ${
+                darkMode ? 'bg-green-900 bg-opacity-50 border-l-4 border-green-500' : 'bg-green-50 border-l-4 border-green-500'
+              }`}>
+                <p className={`text-sm font-medium ${darkMode ? 'text-green-300' : 'text-green-700'}`}>{message}</p>
               </div>
             )}
 
             <div className="space-y-6">
               {!isLogin && (
                 <div className="transform transition-all duration-300">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Full Name
+                  </label>
                   <input
                     type="text"
                     value={name}
@@ -500,7 +549,9 @@ export default function App() {
                     className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
                       fieldErrors.name 
                         ? 'border-red-500 bg-red-50 focus:ring-red-200' 
-                        : 'border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
+                        : darkMode
+                        ? 'bg-gray-700 border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500'
+                        : 'bg-white border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
                     }`}
                     placeholder="Enter your full name"
                     disabled={loading}
@@ -512,7 +563,9 @@ export default function App() {
               )}
 
               <div className="transform transition-all duration-300">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Email
+                </label>
                 <input
                   type="email"
                   value={email}
@@ -525,7 +578,9 @@ export default function App() {
                   className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
                     fieldErrors.email 
                       ? 'border-red-500 bg-red-50 focus:ring-red-200' 
-                      : 'border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
+                      : darkMode
+                      ? 'bg-gray-700 border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500'
+                      : 'bg-white border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
                   }`}
                   placeholder="your@email.com"
                   disabled={loading}
@@ -536,7 +591,9 @@ export default function App() {
               </div>
 
               <div className="transform transition-all duration-300">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Password
+                </label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -550,7 +607,9 @@ export default function App() {
                     className={`w-full px-4 py-3 pr-12 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
                       fieldErrors.password 
                         ? 'border-red-500 bg-red-50 focus:ring-red-200' 
-                        : 'border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
+                        : darkMode
+                        ? 'bg-gray-700 border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500'
+                        : 'bg-white border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
                     }`}
                     placeholder="Enter your password"
                     disabled={loading}
@@ -558,7 +617,9 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className={`absolute right-3 top-1/2 transform -translate-y-1/2 transition-colors ${
+                      darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                    }`}
                     disabled={loading}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -593,16 +654,22 @@ export default function App() {
                   setFieldErrors({});
                   setMessage(null);
                 }} 
-                className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+                className={`font-medium transition-colors ${
+                  darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'
+                }`}
                 disabled={loading}
               >
                 {isLogin ? "Don't have an account? Create one" : "Already have an account? Sign in"}
               </button>
             </div>
 
-            <div className="mt-8 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2 font-medium">🌟 Islamic Life Tracker</p>
-              <div className="text-xs space-y-1 text-gray-500">
+            <div className={`mt-8 p-4 rounded-lg ${
+              darkMode ? 'bg-gray-700' : 'bg-gradient-to-r from-green-50 to-blue-50'
+            }`}>
+              <p className={`text-sm mb-2 font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                🌟 Islamic Life Tracker
+              </p>
+              <div className={`text-xs space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 <div>• Track daily Salah & Islamic practices</div>
                 <div>• Academic & IT progress monitoring</div>
                 <div>• Team collaboration & motivation</div>
@@ -620,15 +687,12 @@ export default function App() {
   const completedMainTasks = mainTasks.filter(t => {
     if (t.task_type === 'simple') return t.completed;
     
-    // For expandable tasks, check completion logic
     const subtasks = tasks.filter(st => st.parent_id === t.task_id);
     
-    // Special logic for Academic/IT Stuff - only need one subtask completed
     if (t.task_id === 'coding') {
       return subtasks.length > 0 && subtasks.some(st => st.completed);
     }
     
-    // For other tasks, need all subtasks completed
     return subtasks.length > 0 && subtasks.every(st => st.completed);
   });
 
@@ -638,13 +702,15 @@ export default function App() {
   
   const pieData = [
     { name: 'Completed', value: completedToday, color: '#10B981' },
-    { name: 'Remaining', value: totalTasks - completedToday, color: '#E5E7EB' }
+    { name: 'Remaining', value: totalTasks - completedToday, color: darkMode ? '#374151' : '#E5E7EB' }
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50 bg-opacity-95">
+      <header className={`shadow-sm border-b sticky top-0 z-50 ${
+        darkMode ? 'bg-gray-800 bg-opacity-95 border-gray-700' : 'bg-white bg-opacity-95 border-gray-200'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
@@ -652,19 +718,38 @@ export default function App() {
                 <Target className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Task Tracker Taqaddum</h1>
-                <p className="text-sm text-gray-600">
-                  Salaam, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Brother/Sister'}! কি অবস্থা? 🌟
+                <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  Task Tracker
+                </h1>
+                <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Salaam, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Brother/Sister'}! 🌟
                 </p>
               </div>
             </div>
-            <button 
-              onClick={handleSignOut} 
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-all duration-200 px-3 py-2 rounded-lg hover:bg-gray-100"
-            >
-              <LogOut className="h-5 w-5" />
-              <span>Sign Out</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  darkMode 
+                    ? 'bg-gray-700 hover:bg-gray-600 text-yellow-300' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+                title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </button>
+              <button 
+                onClick={handleSignOut} 
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+                  darkMode 
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <LogOut className="h-5 w-5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -672,7 +757,7 @@ export default function App() {
       <div className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Navigation */}
-          <nav className="flex space-x-1 mb-8">
+          <nav className="flex flex-wrap gap-2 mb-8">
             {[
               { id: 'dashboard', label: 'My Tasks', icon: CheckCircle }, 
               { id: 'group', label: 'Team Progress', icon: Users }, 
@@ -684,6 +769,8 @@ export default function App() {
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 ${
                   currentPage === id 
                     ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg' 
+                    : darkMode
+                    ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-indigo-600'
                 }`}
               >
@@ -695,8 +782,12 @@ export default function App() {
 
           {/* Success/Error Messages */}
           {message && (
-            <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg animate-slideIn">
-              <p className="text-blue-700 font-medium">{message}</p>
+            <div className={`mb-6 p-4 rounded-lg animate-slideIn ${
+              darkMode 
+                ? 'bg-blue-900 bg-opacity-50 border-l-4 border-blue-500' 
+                : 'bg-blue-50 border-l-4 border-blue-500'
+            }`}>
+              <p className={`font-medium ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>{message}</p>
             </div>
           )}
 
@@ -709,13 +800,18 @@ export default function App() {
                   onToggleTask={handleToggleTask}
                   onToggleSubtask={handleToggleSubtask}
                   loading={tasksLoading}
+                  darkMode={darkMode}
                 />
               </div>
 
               <div className="space-y-6">
                 {/* Progress Summary */}
-                <div className="bg-white rounded-xl shadow-sm p-6 card-hover">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                <div className={`rounded-xl shadow-sm p-6 card-hover ${
+                  darkMode ? 'bg-gray-800' : 'bg-white'
+                }`}>
+                  <h3 className={`text-lg font-bold mb-4 flex items-center ${
+                    darkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
                     <Target className="h-5 w-5 text-indigo-500 mr-2" />
                     Today's Progress
                   </h3>
@@ -723,10 +819,14 @@ export default function App() {
                     <div className="text-3xl font-bold gradient-text mb-1">
                       {completionRate}%
                     </div>
-                    <div className="text-sm text-gray-600">{completedToday} of {totalTasks} completed</div>
+                    <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {completedToday} of {totalTasks} completed
+                    </div>
                   </div>
 
-                  <div className="w-full bg-gray-200 rounded-full h-3 mb-4 overflow-hidden">
+                  <div className={`w-full rounded-full h-3 mb-4 overflow-hidden ${
+                    darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                  }`}>
                     <div 
                       className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out" 
                       style={{ width: `${completionRate}%` }}
@@ -739,14 +839,22 @@ export default function App() {
                         <Pie data={pieData} cx="50%" cy="50%" innerRadius={25} outerRadius={50} dataKey="value">
                           {pieData.map((entry, index) => <Cell key={index} fill={entry.color} />)}
                         </Pie>
-                        <Tooltip />
+                        <Tooltip 
+                          contentStyle={{
+                            backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+                            border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+                            color: darkMode ? '#ffffff' : '#000000'
+                          }}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
 
                   {/* Motivational Message */}
-                  <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
-                    <p className="text-sm text-center font-medium">
+                  <div className={`mt-4 p-3 rounded-lg ${
+                    darkMode ? 'bg-gray-700' : 'bg-gradient-to-r from-green-50 to-blue-50'
+                  }`}>
+                    <p className={`text-sm text-center font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                       {completionRate === 100 ? '🎉 Alhamdulillah! Perfect day!' :
                        completionRate >= 75 ? '💪 Great progress! Keep it up!' :
                        completionRate >= 50 ? '🌱 Good start! Push forward!' :
@@ -757,8 +865,12 @@ export default function App() {
                 </div>
 
                 {/* Quick Task Categories Overview */}
-                <div className="bg-white rounded-xl shadow-sm p-6 card-hover">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                <div className={`rounded-xl shadow-sm p-6 card-hover ${
+                  darkMode ? 'bg-gray-800' : 'bg-white'
+                }`}>
+                  <h3 className={`text-lg font-bold mb-4 flex items-center ${
+                    darkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
                     <Award className="h-5 w-5 text-yellow-500 mr-2" />
                     Categories
                   </h3>
@@ -778,12 +890,10 @@ export default function App() {
                         if (subtasks.length > 0) {
                           const completedSubtasks = subtasks.filter(st => st.completed);
                           
-                          // Special logic for Academic/IT Stuff - only need one subtask
                           if (template.id === 'coding') {
                             isCompleted = completedSubtasks.length > 0;
-                            progress = completedSubtasks.length > 0 ? 100 : Math.round((completedSubtasks.length / subtasks.length) * 100);
+                            progress = completedSubtasks.length > 0 ? 100 : 0;
                           } else {
-                            // For other tasks like Salah - need all subtasks
                             isCompleted = completedSubtasks.length === subtasks.length;
                             progress = Math.round((completedSubtasks.length / subtasks.length) * 100);
                           }
@@ -793,9 +903,12 @@ export default function App() {
                       return (
                         <div 
                           key={template.id} 
-                          className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50 transition-all duration-300 cursor-pointer transform hover:scale-105"
+                          className={`flex items-center justify-between p-3 rounded-lg transition-all duration-300 cursor-pointer transform hover:scale-105 ${
+                            darkMode 
+                              ? 'bg-gray-700 hover:bg-gray-600' 
+                              : 'bg-gradient-to-r from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50'
+                          }`}
                           onClick={() => {
-                            // Scroll to task in the main list
                             const taskElement = document.querySelector(`[data-task-id="${template.id}"]`);
                             taskElement?.scrollIntoView({ behavior: 'smooth' });
                           }}
@@ -804,14 +917,16 @@ export default function App() {
                             <span className="text-lg animate-bounce">{template.icon}</span>
                             <div>
                               <span className={`text-sm font-medium transition-colors ${
-                                isCompleted ? 'text-green-600' : 'text-gray-700'
+                                isCompleted 
+                                  ? 'text-green-600' 
+                                  : darkMode ? 'text-gray-300' : 'text-gray-700'
                               }`}>
                                 {template.name}
                               </span>
                               {template.type !== 'simple' && (
-                                <div className="text-xs text-gray-500">
+                                <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                   {template.id === 'coding' ? 
-                                    (progress > 0 ? 'Completed!' : `${progress}% complete`) :
+                                    (progress > 0 ? 'Completed!' : 'Not started') :
                                     `${progress}% complete`
                                   }
                                 </div>
@@ -820,7 +935,7 @@ export default function App() {
                           </div>
                           <div className="flex items-center space-x-2">
                             {template.type !== 'simple' && (
-                              <div className="w-12 bg-gray-200 rounded-full h-1.5">
+                              <div className={`w-12 rounded-full h-1.5 ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
                                 <div 
                                   className="bg-gradient-to-r from-indigo-500 to-purple-600 h-1.5 rounded-full transition-all duration-500"
                                   style={{ width: `${progress}%` }}
@@ -830,7 +945,7 @@ export default function App() {
                             {isCompleted ? (
                               <CheckCircle className="h-5 w-5 text-green-500 animate-pulse" />
                             ) : (
-                              <Circle className="h-5 w-5 text-gray-400" />
+                              <Circle className={`h-5 w-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                             )}
                           </div>
                         </div>
@@ -838,22 +953,30 @@ export default function App() {
                     })}
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-gray-100">
-                    <div className="text-center text-xs text-gray-500">
+                  <div className={`mt-4 pt-3 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                    <div className={`text-center text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       💡 Click categories to jump to tasks
                     </div>
                   </div>
                 </div>
 
                 {/* Quick Stats */}
-                <div className="bg-white rounded-xl shadow-sm p-6 card-hover">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Today's Stats</h3>
+                <div className={`rounded-xl shadow-sm p-6 card-hover ${
+                  darkMode ? 'bg-gray-800' : 'bg-white'
+                }`}>
+                  <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Today's Stats
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <div className={`text-center p-3 rounded-lg ${
+                      darkMode ? 'bg-green-900 bg-opacity-30' : 'bg-green-50'
+                    }`}>
                       <div className="text-2xl font-bold text-green-600">{completedToday}</div>
                       <div className="text-xs text-green-700">Completed</div>
                     </div>
-                    <div className="text-center p-3 bg-orange-50 rounded-lg">
+                    <div className={`text-center p-3 rounded-lg ${
+                      darkMode ? 'bg-orange-900 bg-opacity-30' : 'bg-orange-50'
+                    }`}>
                       <div className="text-2xl font-bold text-orange-600">{totalTasks - completedToday}</div>
                       <div className="text-xs text-orange-700">Remaining</div>
                     </div>
@@ -866,9 +989,11 @@ export default function App() {
           {/* Group View */}
           {currentPage === 'group' && (
             <div className="space-y-6">
-              <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className={`rounded-xl shadow-sm p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                  <h2 className={`text-xl font-bold flex items-center ${
+                    darkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
                     <Users className="h-6 w-6 text-indigo-500 mr-2" />
                     Team Progress - Today
                   </h2>
@@ -884,8 +1009,14 @@ export default function App() {
                   {allUsersProgress.map((u) => (
                     <div 
                       key={u.user.id} 
-                      className={`bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-lg ${
-                        u.user.id === user.id ? 'ring-2 ring-indigo-500 bg-gradient-to-br from-indigo-50 to-purple-50' : ''
+                      className={`rounded-lg p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-lg ${
+                        u.user.id === user.id 
+                          ? darkMode
+                            ? 'bg-indigo-900 bg-opacity-50 ring-2 ring-indigo-500'
+                            : 'bg-gradient-to-br from-indigo-50 to-purple-50 ring-2 ring-indigo-500'
+                          : darkMode
+                          ? 'bg-gray-700'
+                          : 'bg-gradient-to-br from-gray-50 to-gray-100'
                       }`}
                     >
                       <div className="flex items-center space-x-3 mb-4">
@@ -893,15 +1024,21 @@ export default function App() {
                           <User className="h-6 w-6 text-white" />
                         </div>
                         <div>
-                          <h3 className="font-bold text-gray-900 flex items-center">
+                          <h3 className={`font-bold flex items-center ${
+                            darkMode ? 'text-white' : 'text-gray-900'
+                          }`}>
                             {u.user.name}
                             {u.user.id === user.id && <span className="ml-2 text-indigo-500">👤</span>}
                           </h3>
-                          <p className="text-sm text-gray-600">{u.percentage}% complete</p>
+                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {u.percentage}% complete
+                          </p>
                         </div>
                       </div>
 
-                      <div className="w-full bg-gray-200 rounded-full h-3 mb-4 overflow-hidden">
+                      <div className={`w-full rounded-full h-3 mb-4 overflow-hidden ${
+                        darkMode ? 'bg-gray-600' : 'bg-gray-200'
+                      }`}>
                         <div 
                           className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out" 
                           style={{ width: `${u.percentage}%` }} 
@@ -918,7 +1055,6 @@ export default function App() {
                             isCompleted = mainTask?.completed || false;
                           } else {
                             const subtasks = userTemplateTasks.filter(t => t.parent_id === template.id);
-                            // Special logic for Academic/IT Stuff
                             if (template.id === 'coding') {
                               isCompleted = subtasks.length > 0 && subtasks.some(st => st.completed);
                             } else {
@@ -931,9 +1067,13 @@ export default function App() {
                               {isCompleted ? (
                                 <CheckCircle className="h-4 w-4 text-green-500 animate-pulse" />
                               ) : (
-                                <Circle className="h-4 w-4 text-gray-400" />
+                                <Circle className={`h-4 w-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                               )}
-                              <span className={`flex items-center space-x-2 ${isCompleted ? 'text-green-600 font-medium' : 'text-gray-700'}`}>
+                              <span className={`flex items-center space-x-2 ${
+                                isCompleted 
+                                  ? 'text-green-600 font-medium' 
+                                  : darkMode ? 'text-gray-400' : 'text-gray-700'
+                              }`}>
                                 <span>{template.icon}</span>
                                 <span className="truncate">{template.name}</span>
                               </span>
@@ -942,10 +1082,11 @@ export default function App() {
                         })}
                       </div>
 
-                      {/* Performance Badge */}
-                      <div className="mt-4 pt-3 border-t border-gray-200">
+                      <div className={`mt-4 pt-3 border-t ${
+                        darkMode ? 'border-gray-600' : 'border-gray-200'
+                      }`}>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500">
+                          <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             {u.completed}/{u.total} tasks
                           </span>
                           {u.percentage === 100 && (
@@ -974,6 +1115,7 @@ export default function App() {
                 user={user}
                 weeklyData={weeklyData}
                 allUsersProgress={allUsersProgress}
+                darkMode={darkMode}
               />
             </div>
           )}
