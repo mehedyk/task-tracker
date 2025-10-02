@@ -1,4 +1,4 @@
-/* src/index.css - ENHANCED SAFE VERSION */
+/* src/index.css - Enhanced with Dark Mode Support */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,6 +8,12 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%);
+  transition: background 0.3s ease;
+}
+
+/* Dark mode body */
+.dark body {
+  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
 }
 
 /* Enhanced animations */
@@ -39,7 +45,7 @@ body {
 
 @keyframes taskComplete {
   0% { transform: scale(1); }
-  50% { transform: scale(1.1); background-color: #10B981; }
+  50% { transform: scale(1.05); }
   100% { transform: scale(1); }
 }
 
@@ -55,7 +61,7 @@ body {
 .animate-shake { animation: shake 0.5s ease-in-out; }
 .animate-bounce { animation: bounce 1s infinite; }
 .animate-pulse { animation: pulse 2s infinite; }
-.animate-taskComplete { animation: taskComplete 0.6s ease-in-out; }
+.animate-taskComplete { animation: taskComplete 0.4s ease-in-out; }
 
 /* Enhanced card hover effects */
 .card-hover {
@@ -67,44 +73,13 @@ body {
   transform: translateY(-4px) scale(1.02);
   box-shadow: 
     0 20px 25px -5px rgba(0, 0, 0, 0.1), 
-    0 10px 10px -5px rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(99, 102, 241, 0.05);
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Enhanced button styles */
-.btn-primary {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: white;
-  font-weight: 600;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.75rem;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  transform: translateY(0);
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
-  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
-}
-
-.btn-secondary {
-  background: white;
-  color: #6366f1;
-  border: 2px solid #6366f1;
-  font-weight: 600;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.75rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-secondary:hover {
-  background: #6366f1;
-  color: white;
-  transform: translateY(-2px);
+.dark .card-hover:hover {
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.5), 
+    0 10px 10px -5px rgba(0, 0, 0, 0.3);
 }
 
 /* Progress bar with gradient animation */
@@ -131,14 +106,18 @@ body {
   font-family: 'Georgia', 'Times New Roman', serif;
   font-weight: 400;
   letter-spacing: 0.5px;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Task states with better visual feedback */
+/* Task states with better contrast */
 .task-completed {
   background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
   border: 2px solid #22c55e;
-  animation: taskComplete 0.6s ease-in-out;
+  animation: taskComplete 0.4s ease-in-out;
+}
+
+.dark .task-completed {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+  border: 2px solid #10b981;
 }
 
 .task-completed .task-text {
@@ -147,10 +126,19 @@ body {
   font-weight: 500;
 }
 
+.dark .task-completed .task-text {
+  color: #10b981;
+}
+
 .task-pending {
   background: white;
   border: 2px solid #e5e7eb;
   transition: all 0.3s ease;
+}
+
+.dark .task-pending {
+  background: #374151;
+  border: 2px solid #4b5563;
 }
 
 .task-pending:hover {
@@ -159,18 +147,12 @@ body {
   transform: translateY(-1px);
 }
 
-/* Islamic-themed enhancements */
-.islamic-gradient {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+.dark .task-pending:hover {
+  background: #4b5563;
+  border-color: #6366f1;
 }
 
-.prayer-time {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  color: white;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1rem;
-}
-
+/* Category icons */
 .category-icon {
   display: inline-block;
   transition: all 0.3s ease;
@@ -179,7 +161,6 @@ body {
 
 .category-icon:hover {
   transform: scale(1.2) rotate(5deg);
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
 }
 
 .category-completed .category-icon {
@@ -187,26 +168,7 @@ body {
   filter: drop-shadow(0 4px 8px rgba(34, 197, 94, 0.3));
 }
 
-/* Enhanced team cards */
-.team-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid #e2e8f0;
-  border-radius: 1rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.team-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  border-color: #6366f1;
-}
-
-.team-card.current-user {
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  border: 2px solid #3b82f6;
-}
-
-/* Loading states */
+/* Loading spinner */
 .loading-spinner {
   border: 3px solid #f3f4f6;
   border-top: 3px solid #6366f1;
@@ -214,24 +176,17 @@ body {
   animation: spin 1s linear infinite;
 }
 
+.dark .loading-spinner {
+  border: 3px solid #374151;
+  border-top: 3px solid #6366f1;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-.loading-dots::after {
-  content: '...';
-  animation: dots 1.5s infinite;
-}
-
-@keyframes dots {
-  0%, 20% { color: rgba(0, 0, 0, 0); text-shadow: .25em 0 0 rgba(0, 0, 0, 0), .5em 0 0 rgba(0, 0, 0, 0); }
-  40% { color: #6366f1; text-shadow: .25em 0 0 rgba(0, 0, 0, 0), .5em 0 0 rgba(0, 0, 0, 0); }
-  60% { text-shadow: .25em 0 0 #6366f1, .5em 0 0 rgba(0, 0, 0, 0); }
-  80%, 100% { text-shadow: .25em 0 0 #6366f1, .5em 0 0 #6366f1; }
-}
-
-/* Enhanced focus states */
+/* Focus styles */
 .focus-ring:focus {
   outline: 2px solid transparent;
   outline-offset: 2px;
@@ -239,20 +194,8 @@ body {
   border-radius: 0.375rem;
 }
 
-/* Responsive enhancements */
-@media (max-width: 768px) {
-  .card-hover:hover {
-    transform: translateY(-2px) scale(1.01);
-  }
-  
-  .btn-primary, .btn-secondary {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-  }
-  
-  .gradient-text {
-    font-size: 1.25rem;
-  }
+.dark .focus-ring:focus {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5);
 }
 
 /* Custom scrollbar */
@@ -265,6 +208,10 @@ body {
   border-radius: 4px;
 }
 
+.dark ::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
 ::-webkit-scrollbar-thumb {
   background: linear-gradient(45deg, #6366f1, #8b5cf6);
   border-radius: 4px;
@@ -274,7 +221,28 @@ body {
   background: linear-gradient(45deg, #4f46e5, #7c3aed);
 }
 
-/* Accessibility */
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .card-hover:hover {
+    transform: translateY(-2px) scale(1.01);
+  }
+  
+  /* Larger tap targets for mobile */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Better readability on mobile */
+  body {
+    font-size: 16px;
+  }
+}
+
+/* Accessibility - Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
@@ -283,10 +251,10 @@ body {
   }
 }
 
-/* High contrast support */
+/* High contrast mode */
 @media (prefers-contrast: high) {
-  .card-hover {
-    border: 2px solid #000;
+  .task-pending {
+    border: 3px solid #000;
   }
   
   .task-completed {
@@ -297,4 +265,54 @@ body {
   .progress-bar {
     background: #4169E1;
   }
+}
+
+/* Better text contrast in dark mode */
+.dark {
+  color-scheme: dark;
+}
+
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: #f9fafb;
+}
+
+.dark p {
+  color: #d1d5db;
+}
+
+/* Islamic theme colors */
+:root {
+  --islamic-green: #10b981;
+  --islamic-gold: #f59e0b;
+  --islamic-blue: #3b82f6;
+  --prayer-time: #6366f1;
+  --quran-text: #1f2937;
+  --masjid-color: #7c3aed;
+}
+
+.dark:root {
+  --quran-text: #f9fafb;
+}
+
+/* Enhanced button styles */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Smooth transitions for dark mode */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Don't transition transforms and opacity (they have their own animations) */
+.animate-fadeIn,
+.animate-slideIn,
+.animate-bounce,
+.animate-pulse,
+.card-hover {
+  transition-property: background-color, border-color, color, fill, stroke, transform, box-shadow, opacity;
 }
