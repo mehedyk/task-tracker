@@ -262,7 +262,7 @@ const TaskTracker = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Task Tracker Taqaddum (تقدّم)</h1>
-                <p className="text-sm text-gray-600">Welcome back, {user.email}!</p>
+                <p className="text-sm text-gray-600">আবার চলে আসলেন, {user.email}!</p>
               </div>
             </div>
             <button
