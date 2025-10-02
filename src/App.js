@@ -358,7 +358,7 @@ export default function App() {
         });
         if (error) throw error;
         setUser(data.user);
-        setMessage('✅ Welcome back!');
+        setMessage('✅ জাযাকাল্লাহ! It is not okay to waste a single moment; But now is the best time to start again!');
       } else {
         // Check if email already exists
         const { data: existingUser } = await supabase
