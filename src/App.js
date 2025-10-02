@@ -1,4 +1,4 @@
-// src/App.js - Dark mode
+// src/App.js 
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
 import { taskTemplates } from './config/taskTemplates';
@@ -466,7 +466,7 @@ export default function App() {
           <span>PRODUCT</span>
         </div>
         <div className={`text-center text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-          Islamic Task Tracker • Built with ❤️ for the Ummah
+          Taqaddum (تقدّم)-All rights reserved. © {new Date().getFullYear()}
         </div>
       </div>
     </footer>
