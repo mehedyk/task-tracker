@@ -503,10 +503,10 @@ export default function App() {
                 <Target className="h-8 w-8 text-white" />
               </div>
               <h1 className={`text-3xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                Task Tracker
+                Task Tracker Taqaddum
               </h1>
               <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
-                Track your Islamic lifestyle & progress
+                নামে নাকি কাজে?
               </p>
             </div>
 
@@ -667,12 +667,12 @@ export default function App() {
               darkMode ? 'bg-gray-700' : 'bg-gradient-to-r from-green-50 to-blue-50'
             }`}>
               <p className={`text-sm mb-2 font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                🌟 Islamic Life Tracker
+                🌟Taqaddum (تقدّم) মানে Progress; So,
               </p>
               <div className={`text-xs space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                <div>• Track daily Salah & Islamic practices</div>
-                <div>• Academic & IT progress monitoring</div>
-                <div>• Team collaboration & motivation</div>
+                <div>• Track daily Salah</div>
+                <div>• Academic & IT progress </div>
+                <div>• Team collaboration & reports</div>
               </div>
             </div>
           </div>
@@ -719,10 +719,10 @@ export default function App() {
               </div>
               <div>
                 <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Task Tracker
+                  Task Tracker Taqaddum
                 </h1>
                 <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Salaam, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Brother/Sister'}! 🌟
+                  সালাম, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Brother/Sister'}। কি অবস্থা?
                 </p>
               </div>
             </div>
