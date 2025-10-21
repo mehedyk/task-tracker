@@ -1,4 +1,4 @@
-// src/App.js
+// src/App.js 
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
 import { taskTemplates } from './config/taskTemplates';
@@ -93,11 +93,11 @@ export default function App() {
   const [weeklyData, setWeeklyData] = useState([]);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : true; // Default to dark mode
+    return saved ? JSON.parse(saved) : false;
   });
 
   // Auth/UI states
-  const [authMode, setAuthMode] = useState('login'); // 'login', 'signup', 'forgot'
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -108,18 +108,7 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
 
-  // Clock state
-  const [currentTime, setCurrentTime] = useState(new Date());
-
   const today = isoDateString();
-
-  // Clock effect
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Dark mode effect
   useEffect(() => {
@@ -158,6 +147,8 @@ export default function App() {
   }, [user, currentPage]);
 
   const ensureDailyTasks = useCallback(async (uid, dateStr) => {
+    console.log('Ensuring daily tasks for:', uid, dateStr);
+    
     const { data: existing, error: exErr } = await supabase
       .from('tasks')
       .select('id, task_id')
@@ -173,19 +164,26 @@ export default function App() {
     const needsCreation = taskTemplates.some(template => !existingTaskIds.has(template.id));
 
     if (!needsCreation && existing && existing.length > 0) {
+      console.log('Tasks already exist');
       return;
     }
 
     const dailyTasks = createDailyTasksFromTemplates(uid, dateStr);
+    console.log('Creating tasks:', dailyTasks);
+    
     const { error: insErr } = await supabase.from('tasks').insert(dailyTasks);
     if (insErr) {
       console.error('insert daily tasks error', insErr);
+    } else {
+      console.log('Tasks created successfully');
     }
   }, []);
 
   const loadTasks = useCallback(async () => {
     if (!user) return;
     setTasksLoading(true);
+    
+    console.log('Loading tasks for user:', user.id);
     
     const { error: profileErr } = await supabase
       .from('profiles')
@@ -208,8 +206,18 @@ export default function App() {
     if (error) {
       console.error('load tasks error', error);
       setTasks([]);
+      setMessage('⚠️ Could not load tasks. Check console for details.');
     } else {
+      console.log('Loaded tasks:', data);
       setTasks(data || []);
+      if (!data || data.length === 0) {
+        setMessage('🔄 Creating your daily tasks...');
+        setTimeout(() => {
+          ensureDailyTasks(user.id, today).then(() => {
+            loadTasks();
+          });
+        }, 1000);
+      }
     }
     setTasksLoading(false);
   }, [user, today, ensureDailyTasks]);
@@ -320,13 +328,13 @@ export default function App() {
       errors.email = 'Invalid email format';
     }
     
-    if (authMode !== 'forgot' && !password) {
+    if (!password) {
       errors.password = 'Password is required';
-    } else if (authMode !== 'forgot' && password.length < 6) {
+    } else if (password.length < 6) {
       errors.password = 'Password must be at least 6 characters';
     }
     
-    if (authMode === 'signup' && !name.trim()) {
+    if (!isLogin && !name.trim()) {
       errors.name = 'Name is required';
     }
     
@@ -343,22 +351,22 @@ export default function App() {
     setLoading(true);
 
     try {
-      if (authMode === 'forgot') {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/reset-password`,
-        });
-        if (error) throw error;
-        setMessage('✅ Password reset link sent to your email!');
-        setTimeout(() => setAuthMode('login'), 3000);
-      } else if (authMode === 'login') {
+      if (isLogin) {
         const { data, error } = await supabase.auth.signInWithPassword({ 
           email: email.trim(), 
           password 
         });
         if (error) throw error;
         setUser(data.user);
-        setMessage('✅ জাযাকাল্লাহ! Access Granted!');
+        setMessage('✅ জাযাকাল্লাহ!');
       } else {
+        // Check if email already exists
+        const { data: existingUser } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', (await supabase.auth.getUser()).data.user?.id)
+          .single();
+
         const { data, error } = await supabase.auth.signUp({ 
           email: email.trim(), 
           password, 
@@ -366,12 +374,14 @@ export default function App() {
         });
         
         if (error) {
+          // Check if it's a "user already exists" error
           if (error.message.includes('already registered') || error.message.includes('already exists')) {
             throw new Error('This email is already registered. Please sign in instead.');
           }
           throw error;
         }
         
+        // Check if user was actually created (not just email confirmation sent)
         if (data.user && data.user.identities && data.user.identities.length === 0) {
           throw new Error('This email is already registered. Please sign in instead.');
         }
@@ -456,413 +466,218 @@ export default function App() {
           <span>PRODUCT</span>
         </div>
         <div className={`text-center text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-          Taqaddum (تقدّم) - All rights reserved. © {new Date().getFullYear()}
+          Taqaddum (تقدّم)-All rights reserved. © {new Date().getFullYear()}
         </div>
       </div>
     </footer>
   );
 
-  // HACKER-STYLE AUTH SCREEN
+  // Auth screen
   if (!user) {
     return (
-      <div className="min-h-screen relative overflow-hidden" style={{
-        background: '#000',
-      }}>
-        <style>{`
-          @keyframes matrixFall {
-            0% { top: -100%; }
-            100% { top: 100%; }
-          }
-          @keyframes floatDiagonal {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
-            50% { opacity: 0.5; }
-          }
-          @keyframes glow {
-            0%, 100% { text-shadow: 0 0 10px #0f0, 0 0 20px #0f0; }
-            50% { text-shadow: 0 0 20px #0f0, 0 0 30px #0f0, 0 0 40px #0f0; }
-          }
-          @keyframes scan {
-            0% { top: -100%; }
-            100% { top: 100%; }
-          }
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-30px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          .matrix-rain {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: 1;
-            opacity: 0.15;
-          }
-          .matrix-column {
-            position: absolute;
-            top: -100%;
-            font-size: 18px;
-            color: #0f0;
-            text-shadow: 0 0 8px #0f0;
-            white-space: nowrap;
-            animation: matrixFall linear infinite;
-            font-family: 'Courier New', monospace;
-          }
-          .grid-square {
-            position: fixed;
-            width: 40px;
-            height: 40px;
-            background: rgba(0, 255, 0, 0.1);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            animation: floatDiagonal 8s ease-in-out infinite;
-            z-index: 2;
-            pointer-events: none;
-          }
-          .hacker-form {
-            position: relative;
-            z-index: 10;
-            width: 400px;
-            max-width: 90%;
-            background: rgba(0, 20, 0, 0.95);
-            border: 2px solid #0f0;
-            border-radius: 8px;
-            padding: 40px;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3), inset 0 0 20px rgba(0, 255, 0, 0.1);
-            backdrop-filter: blur(10px);
-            animation: fadeIn 1s ease-out;
-          }
-          .hacker-form::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(transparent 0%, rgba(0, 255, 0, 0.1) 50%, transparent 100%);
-            animation: scan 4s linear infinite;
-            pointer-events: none;
-          }
-          .hacker-title {
-            color: #0f0;
-            font-size: 2em;
-            text-align: center;
-            margin-bottom: 30px;
-            text-shadow: 0 0 10px #0f0;
-            letter-spacing: 2px;
-            animation: glow 2s ease-in-out infinite;
-            font-family: 'Courier New', monospace;
-          }
-          .hacker-input {
-            width: 100%;
-            padding: 12px 15px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid #0f0;
-            border-radius: 4px;
-            color: #0f0;
-            font-size: 16px;
-            outline: none;
-            transition: all 0.3s;
-            font-family: 'Courier New', monospace;
-          }
-          .hacker-input::placeholder {
-            color: rgba(0, 255, 0, 0.5);
-          }
-          .hacker-input:focus {
-            background: rgba(0, 20, 0, 0.8);
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-          }
-          .hacker-btn {
-            width: 100%;
-            background: #0f0;
-            color: #000;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            padding: 12px;
-            border-radius: 4px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s;
-            font-family: 'Courier New', monospace;
-          }
-          .hacker-btn:hover {
-            box-shadow: 0 0 20px #0f0;
-          }
-          .hacker-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-          }
-          .hacker-link {
-            color: #0f0;
-            text-decoration: none;
-            font-size: 14px;
-            transition: all 0.3s;
-            position: relative;
-            font-family: 'Courier New', monospace;
-          }
-          .hacker-link:hover {
-            text-shadow: 0 0 10px #0f0;
-          }
-          .blink {
-            animation: blink 1s step-end infinite;
-          }
-          @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-          }
-        `}</style>
-
-        {/* Matrix Rain Background */}
-        <div className="matrix-rain">
-          {[...Array(50)].map((_, i) => (
-            <div
-              key={i}
-              className="matrix-column"
-              style={{
-                left: `${i * 2}%`,
-                animationDuration: `${Math.random() * 3 + 2}s`,
-                animationDelay: `${Math.random() * 2}s`,
-              }}
-            >
-              {[...Array(20)].map((_, j) => (
-                <div key={j}>
-                  {String.fromCharCode(Math.random() * 94 + 33)}
-                </div>
-              ))}
-            </div>
-          ))}
+      <div className={`min-h-screen flex flex-col ${
+        darkMode 
+          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+          : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
+      }`}>
+        {/* Dark Mode Toggle */}
+        <div className="absolute top-4 right-4 z-50">
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className={`p-3 rounded-full transition-all duration-300 ${
+              darkMode 
+                ? 'bg-gray-700 hover:bg-gray-600 text-yellow-300' 
+                : 'bg-white hover:bg-gray-100 text-gray-700'
+            } shadow-lg`}
+          >
+            {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
         </div>
 
-        {/* Floating Grid Squares */}
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={i}
-            className="grid-square"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${Math.random() * 10 + 5}s`,
-            }}
-          />
-        ))}
-
-        <div className="flex-1 flex items-center justify-center p-4 relative z-10" style={{ minHeight: '100vh' }}>
-          <div className="hacker-form">
-            <div>
-              <h1 className="hacker-title">
-                SIGN {authMode === 'forgot' ? 'RESET' : authMode === 'signup' ? 'UP' : 'IN'}
-                <span className="blink">_</span>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className={`auth-form rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300 ${
+            darkMode ? 'bg-gray-800 bg-opacity-95' : 'bg-white bg-opacity-90'
+          }`}>
+            <div className="text-center mb-8">
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <Target className="h-8 w-8 text-white" />
+              </div>
+              <h1 className={`text-3xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Task Tracker Taqaddum
               </h1>
+              <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                নামে নাকি কাজে?
+              </p>
+            </div>
 
-              {/* Error Message */}
-              {authError && (
-                <div style={{
-                  marginBottom: '1.5rem',
-                  padding: '1rem',
-                  borderRadius: '0.5rem',
-                  background: 'rgba(239, 68, 68, 0.2)',
-                  border: '1px solid #ef4444',
-                  color: '#fca5a5',
-                  fontSize: '0.875rem',
-                  fontFamily: 'Courier New, monospace',
-                }}>
-                  <AlertCircle style={{ width: '16px', height: '16px', display: 'inline', marginRight: '0.5rem' }} />
-                  {authError}
+            {/* Error Message */}
+            {authError && (
+              <div className={`mb-6 p-4 rounded-lg animate-slideIn ${
+                darkMode ? 'bg-red-900 bg-opacity-50 border-l-4 border-red-500' : 'bg-red-50 border-l-4 border-red-500'
+              }`}>
+                <div className="flex items-center">
+                  <AlertCircle className={`h-5 w-5 mr-3 ${darkMode ? 'text-red-400' : 'text-red-500'}`} />
+                  <p className={`text-sm font-medium ${darkMode ? 'text-red-300' : 'text-red-700'}`}>{authError}</p>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Success Message */}
-              {message && !authError && (
-                <div style={{
-                  marginBottom: '1.5rem',
-                  padding: '1rem',
-                  borderRadius: '0.5rem',
-                  background: 'rgba(16, 185, 129, 0.2)',
-                  border: '1px solid #10b981',
-                  color: '#6ee7b7',
-                  fontSize: '0.875rem',
-                  fontFamily: 'Courier New, monospace',
-                }}>
-                  {message}
-                </div>
-              )}
+            {/* Success Message */}
+            {message && !authError && (
+              <div className={`mb-6 p-4 rounded-lg animate-slideIn ${
+                darkMode ? 'bg-green-900 bg-opacity-50 border-l-4 border-green-500' : 'bg-green-50 border-l-4 border-green-500'
+              }`}>
+                <p className={`text-sm font-medium ${darkMode ? 'text-green-300' : 'text-green-700'}`}>{message}</p>
+              </div>
+            )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {authMode === 'signup' && (
-                  <div>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => {
-                        setName(e.target.value);
-                        if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: '' }));
-                      }}
-                      className="hacker-input"
-                      placeholder="USERNAME"
-                      disabled={loading}
-                      style={{
-                        border: fieldErrors.name ? '1px solid #ef4444' : '1px solid #0f0',
-                      }}
-                    />
-                    {fieldErrors.name && (
-                      <p style={{ color: '#f87171', fontSize: '0.75rem', marginTop: '0.25rem', fontFamily: 'Courier New, monospace' }}>
-                        {fieldErrors.name}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                <div>
+            <div className="space-y-6">
+              {!isLogin && (
+                <div className="transform transition-all duration-300">
+                  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Full Name
+                  </label>
                   <input
-                    type="email"
-                    value={email}
+                    type="text"
+                    value={name}
                     onChange={(e) => {
-                      setEmail(e.target.value.toLowerCase());
-                      if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: '' }));
+                      setName(e.target.value);
+                      if (fieldErrors.name) {
+                        setFieldErrors(prev => ({ ...prev, name: '' }));
+                      }
                     }}
-                    className="hacker-input"
-                    placeholder="EMAIL ADDRESS"
+                    className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
+                      fieldErrors.name 
+                        ? 'border-red-500 bg-red-50 focus:ring-red-200' 
+                        : darkMode
+                        ? 'bg-gray-700 border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500'
+                        : 'bg-white border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
+                    }`}
+                    placeholder="Enter your full name"
                     disabled={loading}
-                    style={{
-                      border: fieldErrors.email ? '1px solid #ef4444' : '1px solid #0f0',
-                    }}
                   />
-                  {fieldErrors.email && (
-                    <p style={{ color: '#f87171', fontSize: '0.75rem', marginTop: '0.25rem', fontFamily: 'Courier New, monospace' }}>
-                      {fieldErrors.email}
-                    </p>
+                  {fieldErrors.name && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>
                   )}
                 </div>
+              )}
 
-                {authMode !== 'forgot' && (
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: '' }));
-                      }}
-                      className="hacker-input"
-                      placeholder="PASSWORD"
-                      disabled={loading}
-                      style={{
-                        border: fieldErrors.password ? '1px solid #ef4444' : '1px solid #0f0',
-                        paddingRight: '45px',
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        color: '#0f0',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                      }}
-                      disabled={loading}
-                    >
-                      {showPassword ? <EyeOff style={{ width: '18px', height: '18px' }} /> : <Eye style={{ width: '18px', height: '18px' }} />}
-                    </button>
-                    {fieldErrors.password && (
-                      <p style={{ color: '#f87171', fontSize: '0.75rem', marginTop: '0.25rem', fontFamily: 'Courier New, monospace' }}>
-                        {fieldErrors.password}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {authMode === 'login' && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
-                    <button
-                      onClick={() => {
-                        setAuthMode('forgot');
-                        setAuthError('');
-                        setFieldErrors({});
-                        setMessage(null);
-                      }}
-                      className="hacker-link"
-                      disabled={loading}
-                    >
-                      FORGOT PASSWORD?
-                    </button>
-                    <button
-                      onClick={() => {
-                        setAuthMode('signup');
-                        setAuthError('');
-                        setFieldErrors({});
-                        setMessage(null);
-                      }}
-                      className="hacker-link"
-                      disabled={loading}
-                    >
-                      SIGNUP
-                    </button>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleAuth}
+              <div className="transform transition-all duration-300">
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value.toLowerCase());
+                    if (fieldErrors.email) {
+                      setFieldErrors(prev => ({ ...prev, email: '' }));
+                    }
+                  }}
+                  className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
+                    fieldErrors.email 
+                      ? 'border-red-500 bg-red-50 focus:ring-red-200' 
+                      : darkMode
+                      ? 'bg-gray-700 border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500'
+                      : 'bg-white border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
+                  }`}
+                  placeholder="your@email.com"
                   disabled={loading}
-                  className="hacker-btn"
-                  style={{ marginTop: '10px' }}
-                >
-                  {loading ? (
-                    <span>
-                      {authMode === 'forgot' ? 'SENDING...' : authMode === 'login' ? 'AUTHENTICATING...' : 'CREATING...'}
-                    </span>
-                  ) : (
-                    authMode === 'forgot' ? '🔐 SEND RESET LINK' : authMode === 'login' ? '⚡ ACCESS SYSTEM' : '📝 CREATE ACCOUNT'
-                  )}
-                </button>
-
-                {authMode !== 'login' && (
-                  <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-                    <button
-                      onClick={() => {
-                        setAuthMode('login');
-                        setAuthError('');
-                        setFieldErrors({});
-                        setMessage(null);
-                      }}
-                      className="hacker-link"
-                      disabled={loading}
-                    >
-                      ← BACK TO LOGIN
-                    </button>
-                  </div>
+                />
+                {fieldErrors.email && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>
                 )}
               </div>
 
-              {authMode === 'login' && (
-                <div style={{
-                  marginTop: '2rem',
-                  padding: '1rem',
-                  borderRadius: '0.5rem',
-                  background: 'rgba(0, 255, 0, 0.05)',
-                  border: '1px solid rgba(0, 255, 0, 0.2)',
-                }}>
-                  <p style={{ fontSize: '0.875rem', color: '#0f0', marginBottom: '0.5rem', fontFamily: 'Courier New, monospace' }}>
-                    🌟 Taqaddum (تقدّم) = Progress
-                  </p>
-                  <div style={{ fontSize: '0.75rem', color: 'rgba(0, 255, 0, 0.7)', fontFamily: 'Courier New, monospace' }}>
-                    <div>• Track daily Salah</div>
-                    <div>• Academic & IT progress</div>
-                    <div>• Team collaboration</div>
-                  </div>
+              <div className="transform transition-all duration-300">
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (fieldErrors.password) {
+                        setFieldErrors(prev => ({ ...prev, password: '' }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 pr-12 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
+                      fieldErrors.password 
+                        ? 'border-red-500 bg-red-50 focus:ring-red-200' 
+                        : darkMode
+                        ? 'bg-gray-700 border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500'
+                        : 'bg-white border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
+                    }`}
+                    placeholder="Enter your password"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className={`absolute right-3 top-1/2 transform -translate-y-1/2 transition-colors ${
+                      darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                    disabled={loading}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
-              )}
+                {fieldErrors.password && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>
+                )}
+              </div>
+
+              <button
+                onClick={handleAuth}
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    {isLogin ? 'Signing In...' : 'Creating Account...'}
+                  </div>
+                ) : (
+                  isLogin ? 'Sign In' : 'Create Account'
+                )}
+              </button>
+            </div>
+
+            <div className="mt-6 text-center">
+              <button 
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setAuthError('');
+                  setFieldErrors({});
+                  setMessage(null);
+                }} 
+                className={`font-medium transition-colors ${
+                  darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'
+                }`}
+                disabled={loading}
+              >
+                {isLogin ? "Don't have an account? Create one" : "Already have an account? Sign in"}
+              </button>
+            </div>
+
+            <div className={`mt-8 p-4 rounded-lg ${
+              darkMode ? 'bg-gray-700' : 'bg-gradient-to-r from-green-50 to-blue-50'
+            }`}>
+              <p className={`text-sm mb-2 font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                🌟Taqaddum (تقدّم) মানে Progress; So,
+              </p>
+              <div className={`text-xs space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                <div>• Track daily Salah</div>
+                <div>• Academic & IT progress </div>
+                <div>• Team collaboration & reports</div>
+              </div>
             </div>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -1049,6 +864,102 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Quick Task Categories Overview */}
+                <div className={`rounded-xl shadow-sm p-6 card-hover ${
+                  darkMode ? 'bg-gray-800' : 'bg-white'
+                }`}>
+                  <h3 className={`text-lg font-bold mb-4 flex items-center ${
+                    darkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    <Award className="h-5 w-5 text-yellow-500 mr-2" />
+                    Categories
+                  </h3>
+                  <div className="space-y-3">
+                    {taskTemplates.map(template => {
+                      const templateTasks = tasks.filter(t => t.task_id === template.id || t.parent_id === template.id);
+                      const mainTask = templateTasks.find(t => t.task_id === template.id);
+                      
+                      let isCompleted = false;
+                      let progress = 0;
+                      
+                      if (template.type === 'simple') {
+                        isCompleted = mainTask?.completed || false;
+                        progress = isCompleted ? 100 : 0;
+                      } else {
+                        const subtasks = templateTasks.filter(t => t.parent_id === template.id);
+                        if (subtasks.length > 0) {
+                          const completedSubtasks = subtasks.filter(st => st.completed);
+                          
+                          if (template.id === 'coding') {
+                            isCompleted = completedSubtasks.length > 0;
+                            progress = completedSubtasks.length > 0 ? 100 : 0;
+                          } else {
+                            isCompleted = completedSubtasks.length === subtasks.length;
+                            progress = Math.round((completedSubtasks.length / subtasks.length) * 100);
+                          }
+                        }
+                      }
+
+                      return (
+                        <div 
+                          key={template.id} 
+                          className={`flex items-center justify-between p-3 rounded-lg transition-all duration-300 cursor-pointer transform hover:scale-105 ${
+                            darkMode 
+                              ? 'bg-gray-700 hover:bg-gray-600' 
+                              : 'bg-gradient-to-r from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50'
+                          }`}
+                          onClick={() => {
+                            const taskElement = document.querySelector(`[data-task-id="${template.id}"]`);
+                            taskElement?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <span className="text-lg animate-bounce">{template.icon}</span>
+                            <div>
+                              <span className={`text-sm font-medium transition-colors ${
+                                isCompleted 
+                                  ? 'text-green-600' 
+                                  : darkMode ? 'text-gray-300' : 'text-gray-700'
+                              }`}>
+                                {template.name}
+                              </span>
+                              {template.type !== 'simple' && (
+                                <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  {template.id === 'coding' ? 
+                                    (progress > 0 ? 'Completed!' : 'Not started') :
+                                    `${progress}% complete`
+                                  }
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {template.type !== 'simple' && (
+                              <div className={`w-12 rounded-full h-1.5 ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
+                                <div 
+                                  className="bg-gradient-to-r from-indigo-500 to-purple-600 h-1.5 rounded-full transition-all duration-500"
+                                  style={{ width: `${progress}%` }}
+                                />
+                              </div>
+                            )}
+                            {isCompleted ? (
+                              <CheckCircle className="h-5 w-5 text-green-500 animate-pulse" />
+                            ) : (
+                              <Circle className={`h-5 w-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className={`mt-4 pt-3 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                    <div className={`text-center text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      💡 Click categories to jump to tasks
+                    </div>
+                  </div>
+                </div>
+
                 {/* Quick Stats */}
                 <div className={`rounded-xl shadow-sm p-6 card-hover ${
                   darkMode ? 'bg-gray-800' : 'bg-white'
@@ -1132,6 +1043,43 @@ export default function App() {
                           className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out" 
                           style={{ width: `${u.percentage}%` }} 
                         />
+                      </div>
+
+                      <div className="space-y-2">
+                        {taskTemplates.map(template => {
+                          const userTemplateTasks = u.tasks.filter(t => t.task_id === template.id || t.parent_id === template.id);
+                          const mainTask = userTemplateTasks.find(t => t.task_id === template.id);
+                          
+                          let isCompleted = false;
+                          if (template.type === 'simple') {
+                            isCompleted = mainTask?.completed || false;
+                          } else {
+                            const subtasks = userTemplateTasks.filter(t => t.parent_id === template.id);
+                            if (template.id === 'coding') {
+                              isCompleted = subtasks.length > 0 && subtasks.some(st => st.completed);
+                            } else {
+                              isCompleted = subtasks.length > 0 && subtasks.every(st => st.completed);
+                            }
+                          }
+
+                          return (
+                            <div key={template.id} className="flex items-center space-x-2 text-sm">
+                              {isCompleted ? (
+                                <CheckCircle className="h-4 w-4 text-green-500 animate-pulse" />
+                              ) : (
+                                <Circle className={`h-4 w-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                              )}
+                              <span className={`flex items-center space-x-2 ${
+                                isCompleted 
+                                  ? 'text-green-600 font-medium' 
+                                  : darkMode ? 'text-gray-400' : 'text-gray-700'
+                              }`}>
+                                <span>{template.icon}</span>
+                                <span className="truncate">{template.name}</span>
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
 
                       <div className={`mt-4 pt-3 border-t ${
