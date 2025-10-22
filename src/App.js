@@ -1,4 +1,4 @@
-// src/App.js 
+// src/App.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
 import { taskTemplates } from './config/taskTemplates';
@@ -40,7 +40,6 @@ function isoDateString(d = new Date()) {
   return d.toISOString().split('T')[0];
 }
 
-// Create daily tasks from templates
 const createDailyTasksFromTemplates = (userId, date) => {
   const tasks = [];
   
@@ -147,8 +146,6 @@ export default function App() {
   }, [user, currentPage]);
 
   const ensureDailyTasks = useCallback(async (uid, dateStr) => {
-    console.log('Ensuring daily tasks for:', uid, dateStr);
-    
     const { data: existing, error: exErr } = await supabase
       .from('tasks')
       .select('id, task_id')
@@ -164,26 +161,19 @@ export default function App() {
     const needsCreation = taskTemplates.some(template => !existingTaskIds.has(template.id));
 
     if (!needsCreation && existing && existing.length > 0) {
-      console.log('Tasks already exist');
       return;
     }
 
     const dailyTasks = createDailyTasksFromTemplates(uid, dateStr);
-    console.log('Creating tasks:', dailyTasks);
-    
     const { error: insErr } = await supabase.from('tasks').insert(dailyTasks);
     if (insErr) {
       console.error('insert daily tasks error', insErr);
-    } else {
-      console.log('Tasks created successfully');
     }
   }, []);
 
   const loadTasks = useCallback(async () => {
     if (!user) return;
     setTasksLoading(true);
-    
-    console.log('Loading tasks for user:', user.id);
     
     const { error: profileErr } = await supabase
       .from('profiles')
@@ -206,9 +196,8 @@ export default function App() {
     if (error) {
       console.error('load tasks error', error);
       setTasks([]);
-      setMessage('⚠️ Could not load tasks. Check console for details.');
+      setMessage('⚠️ Could not load tasks.');
     } else {
-      console.log('Loaded tasks:', data);
       setTasks(data || []);
       if (!data || data.length === 0) {
         setMessage('🔄 Creating your daily tasks...');
@@ -243,17 +232,13 @@ export default function App() {
     if (profiles && profiles.length > 0) {
       progress = profiles.map((p) => {
         const userTasks = (tasksToday || []).filter((t) => t.user_id === p.id);
-        
         const mainTasks = userTasks.filter(t => t.is_parent || t.task_type === 'simple');
         const completedMainTasks = mainTasks.filter(t => {
           if (t.task_type === 'simple') return t.completed;
-          
           const subtasks = userTasks.filter(st => st.parent_id === t.task_id);
-          
           if (t.task_id === 'coding') {
             return subtasks.length > 0 && subtasks.some(st => st.completed);
           }
-          
           return subtasks.length > 0 && subtasks.every(st => st.completed);
         });
         
@@ -294,13 +279,10 @@ export default function App() {
       const mainTasks = (tasksOnDay || []).filter(t => t.is_parent || t.task_type === 'simple');
       const completedMainTasks = mainTasks.filter(t => {
         if (t.task_type === 'simple') return t.completed;
-        
         const subtasks = (tasksOnDay || []).filter(st => st.parent_id === t.task_id);
-        
         if (t.task_id === 'coding') {
           return subtasks.length > 0 && subtasks.some(st => st.completed);
         }
-        
         return subtasks.length > 0 && subtasks.every(st => st.completed);
       });
       
@@ -360,13 +342,6 @@ export default function App() {
         setUser(data.user);
         setMessage('✅ জাযাকাল্লাহ!');
       } else {
-        // Check if email already exists
-        const { data: existingUser } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', (await supabase.auth.getUser()).data.user?.id)
-          .single();
-
         const { data, error } = await supabase.auth.signUp({ 
           email: email.trim(), 
           password, 
@@ -374,20 +349,18 @@ export default function App() {
         });
         
         if (error) {
-          // Check if it's a "user already exists" error
           if (error.message.includes('already registered') || error.message.includes('already exists')) {
             throw new Error('This email is already registered. Please sign in instead.');
           }
           throw error;
         }
         
-        // Check if user was actually created (not just email confirmation sent)
         if (data.user && data.user.identities && data.user.identities.length === 0) {
           throw new Error('This email is already registered. Please sign in instead.');
         }
         
         if (data.user && !data.session) {
-          setMessage('✅ Account created! Please check your email to verify your account.');
+          setMessage('✅ Account created! Please check your email to verify.');
         } else {
           setMessage('✅ Account created successfully!');
           if (data.user) {
@@ -446,7 +419,6 @@ export default function App() {
     await handleToggleTask(subtaskId, newCompleted);
   };
 
-  // Footer Component
   const Footer = () => (
     <footer className={`border-t mt-12 py-6 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -466,21 +438,120 @@ export default function App() {
           <span>PRODUCT</span>
         </div>
         <div className={`text-center text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-          Taqaddum (تقدّم)-All rights reserved. © {new Date().getFullYear()}
+          Taqaddum (تقدّم) - All rights reserved © {new Date().getFullYear()}
         </div>
       </div>
     </footer>
   );
 
-  // Auth screen
+  // NIXIE CLOCK COMPONENT
+  const NixieClock = () => {
+    const [time, setTime] = useState(new Date());
+
+    useEffect(() => {
+      const timer = setInterval(() => setTime(new Date()), 1000);
+      return () => clearInterval(timer);
+    }, []);
+
+    const formatTime = (num) => String(num).padStart(2, '0');
+    const hours = formatTime(time.getHours());
+    const minutes = formatTime(time.getMinutes());
+    const seconds = formatTime(time.getSeconds());
+    const ampm = time.getHours() >= 12 ? 'PM' : 'AM';
+
+    return (
+      <div className="flex flex-col items-center justify-center space-y-6">
+        <style>{`
+          @keyframes glow-pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+          }
+          .nixie-digit {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            font-size: 72px;
+            color: transparent;
+            -webkit-text-stroke: 1.5px rgba(255, 180, 100, 0.85);
+            text-shadow:
+              0 0 8px rgba(255, 160, 40, 0.9),
+              0 0 28px rgba(255, 140, 20, 0.8),
+              0 0 48px rgba(255, 110, 10, 0.45);
+            background: linear-gradient(180deg, #fff7d8 0%, #ffb36b 40%, #ff7b00 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: glow-pulse 2s infinite;
+          }
+          .tube-container {
+            background: linear-gradient(180deg, rgba(255,170,100,0.05), rgba(0,0,0,0.3));
+            border: 3px solid rgba(255,160,40,0.12);
+            border-radius: 24px;
+            padding: 32px 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), inset 0 0 48px rgba(255,120,10,0.03);
+            position: relative;
+          }
+          .tube-glow {
+            position: absolute;
+            inset: 8px;
+            border-radius: 20px;
+            box-shadow: 0 0 100px 28px rgba(255,140,20,.12);
+            pointer-events: none;
+          }
+          .ampm-indicator {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 14px;
+            color: rgba(255,160,40,.9);
+            background: rgba(0,0,0,.35);
+            padding: 6px 12px;
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
+            font-weight: 600;
+          }
+        `}</style>
+        
+        <div className="tube-container relative">
+          <div className="tube-glow"></div>
+          <div className="ampm-indicator">{ampm}</div>
+          <div className="flex items-center justify-center space-x-8">
+            <div className="flex flex-col items-center space-y-2">
+              <span className="nixie-digit">{hours[0]}</span>
+              <span className="nixie-digit">{hours[1]}</span>
+            </div>
+            <div className="flex flex-col space-y-8">
+              <div className="w-3 h-3 rounded-full bg-gradient-to-br from-orange-400 to-red-600" 
+                   style={{boxShadow: '0 0 16px rgba(255,140,20,0.8)', animation: 'glow-pulse 1s infinite'}}></div>
+              <div className="w-3 h-3 rounded-full bg-gradient-to-br from-orange-400 to-red-600" 
+                   style={{boxShadow: '0 0 16px rgba(255,140,20,0.8)', animation: 'glow-pulse 1s infinite'}}></div>
+            </div>
+            <div className="flex flex-col items-center space-y-2">
+              <span className="nixie-digit">{minutes[0]}</span>
+              <span className="nixie-digit">{minutes[1]}</span>
+            </div>
+            <div className="flex flex-col space-y-8">
+              <div className="w-3 h-3 rounded-full bg-gradient-to-br from-orange-400 to-red-600" 
+                   style={{boxShadow: '0 0 16px rgba(255,140,20,0.8)', animation: 'glow-pulse 1s infinite'}}></div>
+              <div className="w-3 h-3 rounded-full bg-gradient-to-br from-orange-400 to-red-600" 
+                   style={{boxShadow: '0 0 16px rgba(255,140,20,0.8)', animation: 'glow-pulse 1s infinite'}}></div>
+            </div>
+            <div className="flex flex-col items-center space-y-2">
+              <span className="nixie-digit">{seconds[0]}</span>
+              <span className="nixie-digit">{seconds[1]}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // AUTH SCREEN WITH ECLIPSE DESIGN
   if (!user) {
     return (
       <div className={`min-h-screen flex flex-col ${
         darkMode 
           ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
-          : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
+          : 'bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100'
       }`}>
-        {/* Dark Mode Toggle */}
         <div className="absolute top-4 right-4 z-50">
           <button
             onClick={() => setDarkMode(!darkMode)}
@@ -495,184 +566,215 @@ export default function App() {
         </div>
 
         <div className="flex-1 flex items-center justify-center p-4">
-          <div className={`auth-form rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300 ${
-            darkMode ? 'bg-gray-800 bg-opacity-95' : 'bg-white bg-opacity-90'
+          <div className={`flex max-w-6xl w-full rounded-3xl overflow-hidden shadow-2xl ${
+            darkMode ? 'bg-gray-800 bg-opacity-95' : 'bg-white'
           }`}>
-            <div className="text-center mb-8">
-              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                <Target className="h-8 w-8 text-white" />
+            {/* LEFT SIDE - CLOCK */}
+            <div className={`hidden lg:flex flex-1 flex-col items-center justify-center p-12 ${
+              darkMode 
+                ? 'bg-gradient-to-br from-gray-900 to-gray-800' 
+                : 'bg-gradient-to-br from-gray-900 to-gray-800'
+            } relative overflow-hidden`}>
+              <div className="absolute top-8 left-8">
+                <h2 className="text-white text-3xl font-bold tracking-tight">Taqaddum.</h2>
               </div>
-              <h1 className={`text-3xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                Task Tracker Taqaddum
-              </h1>
-              <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
-                নামে নাকি কাজে?
-              </p>
+              
+              <NixieClock />
+              
+              <div className="absolute bottom-12 left-8">
+                <h1 className="text-white text-5xl font-bold mb-2">
+                  {isLogin ? 'Welcome Back!' : 'Welcome!'}
+                </h1>
+                <p className="text-gray-300 text-lg">
+                  {isLogin ? 'Sign in to continue' : 'Create your account'}
+                </p>
+              </div>
             </div>
 
-            {/* Error Message */}
-            {authError && (
-              <div className={`mb-6 p-4 rounded-lg animate-slideIn ${
-                darkMode ? 'bg-red-900 bg-opacity-50 border-l-4 border-red-500' : 'bg-red-50 border-l-4 border-red-500'
-              }`}>
-                <div className="flex items-center">
-                  <AlertCircle className={`h-5 w-5 mr-3 ${darkMode ? 'text-red-400' : 'text-red-500'}`} />
-                  <p className={`text-sm font-medium ${darkMode ? 'text-red-300' : 'text-red-700'}`}>{authError}</p>
+            {/* RIGHT SIDE - FORM */}
+            <div className="flex-1 p-12">
+              <div className="max-w-md mx-auto">
+                <div className="flex justify-end items-center space-x-6 mb-8 text-sm font-medium">
+                  <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>HOME</span>
+                  <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>ABOUT US</span>
+                  <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>CONTACT</span>
+                  <span className={darkMode ? 'text-white' : 'text-gray-900'}>
+                    {isLogin ? 'LOG IN' : 'SIGN UP'}
+                  </span>
                 </div>
-              </div>
-            )}
 
-            {/* Success Message */}
-            {message && !authError && (
-              <div className={`mb-6 p-4 rounded-lg animate-slideIn ${
-                darkMode ? 'bg-green-900 bg-opacity-50 border-l-4 border-green-500' : 'bg-green-50 border-l-4 border-green-500'
-              }`}>
-                <p className={`text-sm font-medium ${darkMode ? 'text-green-300' : 'text-green-700'}`}>{message}</p>
-              </div>
-            )}
+                <h2 className={`text-4xl font-bold mb-8 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  {isLogin ? 'Log in' : 'Sign up'}
+                </h2>
 
-            <div className="space-y-6">
-              {!isLogin && (
-                <div className="transform transition-all duration-300">
-                  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      if (fieldErrors.name) {
-                        setFieldErrors(prev => ({ ...prev, name: '' }));
-                      }
-                    }}
-                    className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
-                      fieldErrors.name 
-                        ? 'border-red-500 bg-red-50 focus:ring-red-200' 
-                        : darkMode
-                        ? 'bg-gray-700 border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500'
-                        : 'bg-white border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
-                    }`}
-                    placeholder="Enter your full name"
-                    disabled={loading}
-                  />
-                  {fieldErrors.name && (
-                    <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>
-                  )}
-                </div>
-              )}
-
-              <div className="transform transition-all duration-300">
-                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value.toLowerCase());
-                    if (fieldErrors.email) {
-                      setFieldErrors(prev => ({ ...prev, email: '' }));
-                    }
-                  }}
-                  className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
-                    fieldErrors.email 
-                      ? 'border-red-500 bg-red-50 focus:ring-red-200' 
-                      : darkMode
-                      ? 'bg-gray-700 border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500'
-                      : 'bg-white border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
-                  }`}
-                  placeholder="your@email.com"
-                  disabled={loading}
-                />
-                {fieldErrors.email && (
-                  <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>
+                {authError && (
+                  <div className="mb-6 p-4 rounded-lg bg-red-50 border-l-4 border-red-500">
+                    <div className="flex items-center">
+                      <AlertCircle className="h-5 w-5 mr-3 text-red-500" />
+                      <p className="text-sm font-medium text-red-700">{authError}</p>
+                    </div>
+                  </div>
                 )}
-              </div>
 
-              <div className="transform transition-all duration-300">
-                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (fieldErrors.password) {
-                        setFieldErrors(prev => ({ ...prev, password: '' }));
-                      }
-                    }}
-                    className={`w-full px-4 py-3 pr-12 border rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none ${
-                      fieldErrors.password 
-                        ? 'border-red-500 bg-red-50 focus:ring-red-200' 
-                        : darkMode
-                        ? 'bg-gray-700 border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500'
-                        : 'bg-white border-gray-300 focus:ring-indigo-200 focus:border-indigo-500'
-                    }`}
-                    placeholder="Enter your password"
-                    disabled={loading}
-                  />
+                {message && !authError && (
+                  <div className="mb-6 p-4 rounded-lg bg-green-50 border-l-4 border-green-500">
+                    <p className="text-sm font-medium text-green-700">{message}</p>
+                  </div>
+                )}
+
+                <div className="space-y-5">
+                  {!isLogin && (
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${
+                        darkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>Full Name</label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lg">👤</span>
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={(e) => {
+                            setName(e.target.value);
+                            if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: '' }));
+                          }}
+                          className={`w-full pl-12 pr-4 py-3 border rounded-xl transition-all duration-300 ${
+                            fieldErrors.name 
+                              ? 'border-red-500 bg-red-50' 
+                              : darkMode
+                              ? 'bg-gray-700 border-gray-600 text-white focus:border-indigo-500'
+                              : 'bg-gray-50 border-gray-300 focus:border-indigo-500 focus:bg-white'
+                          }`}
+                          placeholder="Palmer Gallego"
+                          disabled={loading}
+                        />
+                      </div>
+                      {fieldErrors.name && <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${
+                      darkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Email Address</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lg">📧</span>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value.toLowerCase());
+                          if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: '' }));
+                        }}
+                        className={`w-full pl-12 pr-4 py-3 border rounded-xl transition-all duration-300 ${
+                          fieldErrors.email 
+                            ? 'border-red-500 bg-red-50' 
+                            : darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white focus:border-indigo-500'
+                            : 'bg-gray-50 border-gray-300 focus:border-indigo-500 focus:bg-white'
+                        }`}
+                        placeholder="your@email.com"
+                        disabled={loading}
+                      />
+                    </div>
+                    {fieldErrors.email && <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>}
+                  </div>
+
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${
+                      darkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Password</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lg">🔒</span>
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: '' }));
+                        }}
+                        className={`w-full pl-12 pr-12 py-3 border rounded-xl transition-all duration-300 ${
+                          fieldErrors.password 
+                            ? 'border-red-500 bg-red-50' 
+                            : darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white focus:border-indigo-500'
+                            : 'bg-gray-50 border-gray-300 focus:border-indigo-500 focus:bg-white'
+                        }`}
+                        placeholder="••••••••"
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        disabled={loading}
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                    {fieldErrors.password && <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>}
+                  </div>
+
+                  {isLogin && (
+                    <div className="flex items-center justify-between text-sm">
+                      <label className="flex items-center space-x-2">
+                        <input type="checkbox" className="rounded" />
+                        <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Remember Me</span>
+                      </label>
+                      <button className={darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}>
+                        Forgot Password?
+                      </button>
+                    </div>
+                  )}
+
                   <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className={`absolute right-3 top-1/2 transform -translate-y-1/2 transition-colors ${
-                      darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
-                    }`}
+                    onClick={handleAuth}
                     disabled={loading}
+                    className="w-full bg-black text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-all duration-300 disabled:opacity-50"
                   >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {loading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                        {isLogin ? 'Signing In...' : 'Creating Account...'}
+                      </div>
+                    ) : (
+                      isLogin ? 'Log in' : 'Create Account'
+                    )}
+                  </button>
+
+                  <div className="text-center text-sm">
+                    <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>or</span>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setIsLogin(!isLogin);
+                      setAuthError('');
+                      setFieldErrors({});
+                      setMessage(null);
+                    }}
+                    disabled={loading}
+                    className={`w-full py-3 rounded-xl font-medium transition-all duration-300 ${
+                      darkMode 
+                        ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                    }`}
+                  >
+                    {isLogin ? 'Sign up' : 'Log in'}
                   </button>
                 </div>
-                {fieldErrors.password && (
-                  <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>
-                )}
-              </div>
 
-              <button
-                onClick={handleAuth}
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    {isLogin ? 'Signing In...' : 'Creating Account...'}
+                <div className={`mt-8 p-4 rounded-xl ${
+                  darkMode ? 'bg-gray-700' : 'bg-gradient-to-r from-green-50 to-blue-50'
+                }`}>
+                  <p className={`text-sm mb-2 font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    🌟 Taqaddum (تقدّم) মানে Progress
+                  </p>
+                  <div className={`text-xs space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <div>• Track daily Salah & Islamic lifestyle</div>
+                    <div>• Monitor academic & IT progress</div>
+                    <div>• Team collaboration & reports</div>
                   </div>
-                ) : (
-                  isLogin ? 'Sign In' : 'Create Account'
-                )}
-              </button>
-            </div>
-
-            <div className="mt-6 text-center">
-              <button 
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setAuthError('');
-                  setFieldErrors({});
-                  setMessage(null);
-                }} 
-                className={`font-medium transition-colors ${
-                  darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'
-                }`}
-                disabled={loading}
-              >
-                {isLogin ? "Don't have an account? Create one" : "Already have an account? Sign in"}
-              </button>
-            </div>
-
-            <div className={`mt-8 p-4 rounded-lg ${
-              darkMode ? 'bg-gray-700' : 'bg-gradient-to-r from-green-50 to-blue-50'
-            }`}>
-              <p className={`text-sm mb-2 font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                🌟Taqaddum (تقدّم) মানে Progress; So,
-              </p>
-              <div className={`text-xs space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                <div>• Track daily Salah</div>
-                <div>• Academic & IT progress </div>
-                <div>• Team collaboration & reports</div>
+                </div>
               </div>
             </div>
           </div>
@@ -682,17 +784,14 @@ export default function App() {
     );
   }
 
-  // Calculate progress for dashboard
+  // MAIN APP (LOGGED IN STATE) - Keep existing dashboard code
   const mainTasks = tasks.filter(t => t.is_parent || t.task_type === 'simple');
   const completedMainTasks = mainTasks.filter(t => {
     if (t.task_type === 'simple') return t.completed;
-    
     const subtasks = tasks.filter(st => st.parent_id === t.task_id);
-    
     if (t.task_id === 'coding') {
       return subtasks.length > 0 && subtasks.some(st => st.completed);
     }
-    
     return subtasks.length > 0 && subtasks.every(st => st.completed);
   });
 
@@ -707,7 +806,6 @@ export default function App() {
 
   return (
     <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Header */}
       <header className={`shadow-sm border-b sticky top-0 z-50 ${
         darkMode ? 'bg-gray-800 bg-opacity-95 border-gray-700' : 'bg-white bg-opacity-95 border-gray-200'
       }`}>
@@ -734,7 +832,6 @@ export default function App() {
                     ? 'bg-gray-700 hover:bg-gray-600 text-yellow-300' 
                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                 }`}
-                title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               >
                 {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </button>
@@ -756,7 +853,6 @@ export default function App() {
 
       <div className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Navigation */}
           <nav className="flex flex-wrap gap-2 mb-8">
             {[
               { id: 'dashboard', label: 'My Tasks', icon: CheckCircle }, 
@@ -780,7 +876,6 @@ export default function App() {
             ))}
           </nav>
 
-          {/* Success/Error Messages */}
           {message && (
             <div className={`mb-6 p-4 rounded-lg animate-slideIn ${
               darkMode 
@@ -791,7 +886,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Dashboard */}
           {currentPage === 'dashboard' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
@@ -805,7 +899,6 @@ export default function App() {
               </div>
 
               <div className="space-y-6">
-                {/* Progress Summary */}
                 <div className={`rounded-xl shadow-sm p-6 card-hover ${
                   darkMode ? 'bg-gray-800' : 'bg-white'
                 }`}>
@@ -850,7 +943,6 @@ export default function App() {
                     </ResponsiveContainer>
                   </div>
 
-                  {/* Motivational Message */}
                   <div className={`mt-4 p-3 rounded-lg ${
                     darkMode ? 'bg-gray-700' : 'bg-gradient-to-r from-green-50 to-blue-50'
                   }`}>
@@ -864,7 +956,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Quick Task Categories Overview */}
                 <div className={`rounded-xl shadow-sm p-6 card-hover ${
                   darkMode ? 'bg-gray-800' : 'bg-white'
                 }`}>
@@ -952,15 +1043,8 @@ export default function App() {
                       );
                     })}
                   </div>
-
-                  <div className={`mt-4 pt-3 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-                    <div className={`text-center text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      💡 Click categories to jump to tasks
-                    </div>
-                  </div>
                 </div>
 
-                {/* Quick Stats */}
                 <div className={`rounded-xl shadow-sm p-6 card-hover ${
                   darkMode ? 'bg-gray-800' : 'bg-white'
                 }`}>
@@ -986,7 +1070,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Group View */}
           {currentPage === 'group' && (
             <div className="space-y-6">
               <div className={`rounded-xl shadow-sm p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
@@ -1094,11 +1177,6 @@ export default function App() {
                               🏆 Perfect!
                             </span>
                           )}
-                          {u.percentage >= 75 && u.percentage < 100 && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              🚀 Excellent
-                            </span>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -1108,7 +1186,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Reports */}
           {currentPage === 'reports' && (
             <div className="animate-fadeIn">
               <EnhancedReports 
