@@ -19,7 +19,8 @@ import {
   Award,
   ExternalLink,
   Moon,
-  Sun
+  Sun,
+  X
 } from 'lucide-react';
 import {
   LineChart,
@@ -106,10 +107,11 @@ export default function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [showAbout, setShowAbout] = useState(false);
+  const [showContact, setShowContact] = useState(false);
 
   const today = isoDateString();
 
-  // Dark mode effect
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
     if (darkMode) {
@@ -444,7 +446,7 @@ export default function App() {
     </footer>
   );
 
-  // NIXIE CLOCK COMPONENT
+  // REALISTIC NIXIE TUBE CLOCK COMPONENT
   const NixieClock = () => {
     const [time, setTime] = useState(new Date());
 
@@ -457,92 +459,345 @@ export default function App() {
     const hours = formatTime(time.getHours());
     const minutes = formatTime(time.getMinutes());
     const seconds = formatTime(time.getSeconds());
-    const ampm = time.getHours() >= 12 ? 'PM' : 'AM';
 
     return (
-      <div className="flex flex-col items-center justify-center space-y-6">
+      <div className="flex flex-col items-center justify-center">
         <style>{`
-          @keyframes glow-pulse {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 1; }
+          @keyframes nixie-glow {
+            0%, 100% { 
+              text-shadow: 
+                0 0 10px rgba(255, 140, 60, 1),
+                0 0 20px rgba(255, 120, 40, 0.8),
+                0 0 30px rgba(255, 100, 20, 0.6),
+                0 0 40px rgba(255, 80, 10, 0.4);
+            }
+            50% { 
+              text-shadow: 
+                0 0 15px rgba(255, 140, 60, 1),
+                0 0 30px rgba(255, 120, 40, 0.9),
+                0 0 45px rgba(255, 100, 20, 0.7),
+                0 0 60px rgba(255, 80, 10, 0.5);
+            }
           }
-          .nixie-digit {
-            font-family: 'Courier New', monospace;
-            font-weight: 700;
-            font-size: 72px;
-            color: transparent;
-            -webkit-text-stroke: 1.5px rgba(255, 180, 100, 0.85);
-            text-shadow:
-              0 0 8px rgba(255, 160, 40, 0.9),
-              0 0 28px rgba(255, 140, 20, 0.8),
-              0 0 48px rgba(255, 110, 10, 0.45);
-            background: linear-gradient(180deg, #fff7d8 0%, #ffb36b 40%, #ff7b00 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            animation: glow-pulse 2s infinite;
+          
+          @keyframes base-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 140, 20, 0.6); }
+            50% { box-shadow: 0 0 30px rgba(255, 140, 20, 0.9); }
           }
-          .tube-container {
-            background: linear-gradient(180deg, rgba(255,170,100,0.05), rgba(0,0,0,0.3));
-            border: 3px solid rgba(255,160,40,0.12);
-            border-radius: 24px;
-            padding: 32px 24px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), inset 0 0 48px rgba(255,120,10,0.03);
+
+          .nixie-tube {
             position: relative;
+            width: 180px;
+            height: 320px;
+            background: linear-gradient(180deg, 
+              rgba(40, 25, 15, 0.95) 0%,
+              rgba(25, 15, 10, 0.98) 50%,
+              rgba(20, 10, 5, 1) 100%
+            );
+            border-radius: 80px;
+            border: 4px solid;
+            border-color: rgba(180, 120, 60, 0.4) rgba(120, 80, 40, 0.6) rgba(80, 50, 25, 0.8);
+            box-shadow: 
+              inset 0 0 40px rgba(255, 140, 20, 0.1),
+              inset 0 0 20px rgba(0, 0, 0, 0.8),
+              0 10px 40px rgba(0, 0, 0, 0.9),
+              0 0 60px rgba(255, 120, 20, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            overflow: hidden;
           }
-          .tube-glow {
+
+          .nixie-tube::before {
+            content: '';
             position: absolute;
             inset: 8px;
-            border-radius: 20px;
-            box-shadow: 0 0 100px 28px rgba(255,140,20,.12);
+            background: radial-gradient(
+              ellipse at center,
+              rgba(255, 140, 20, 0.03) 0%,
+              transparent 60%
+            );
+            border-radius: 72px;
             pointer-events: none;
           }
-          .ampm-indicator {
+
+          .nixie-tube::after {
+            content: '';
             position: absolute;
-            top: 16px;
-            right: 16px;
-            font-size: 14px;
-            color: rgba(255,160,40,.9);
-            background: rgba(0,0,0,.35);
-            padding: 6px 12px;
-            border-radius: 8px;
-            backdrop-filter: blur(4px);
-            font-weight: 600;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, 
+              rgba(120, 80, 40, 0.8) 0%,
+              rgba(80, 50, 25, 0.6) 50%,
+              transparent 100%
+            );
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+          }
+
+          .tube-rails {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+          }
+
+          .tube-rail {
+            position: absolute;
+            width: 12px;
+            height: 100%;
+            background: linear-gradient(90deg,
+              rgba(140, 100, 50, 0.6) 0%,
+              rgba(100, 70, 35, 0.8) 50%,
+              rgba(60, 40, 20, 0.6) 100%
+            );
+            box-shadow: 
+              inset 2px 0 4px rgba(0, 0, 0, 0.8),
+              inset -2px 0 4px rgba(0, 0, 0, 0.6);
+          }
+
+          .tube-rail-left { left: 15px; border-radius: 6px 0 0 6px; }
+          .tube-rail-right { right: 15px; border-radius: 0 6px 6px 0; }
+
+          .nixie-digit {
+            font-family: 'Courier New', 'Monaco', monospace;
+            font-size: 80px;
+            font-weight: 700;
+            color: #FF8C3C;
+            animation: nixie-glow 2s ease-in-out infinite;
+            position: relative;
+            z-index: 2;
+            letter-spacing: -5px;
+            text-align: center;
+            width: 100%;
+          }
+
+          .tube-base {
+            width: 200px;
+            height: 50px;
+            background: linear-gradient(180deg,
+              rgba(140, 100, 50, 0.8) 0%,
+              rgba(100, 70, 35, 0.9) 50%,
+              rgba(60, 40, 20, 1) 100%
+            );
+            border-radius: 25px;
+            position: relative;
+            box-shadow: 
+              0 10px 30px rgba(0, 0, 0, 0.8),
+              inset 0 -3px 10px rgba(0, 0, 0, 0.6);
+            animation: base-glow 2s ease-in-out infinite;
+          }
+
+          .tube-base::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle,
+              rgba(255, 140, 20, 0.6) 0%,
+              rgba(255, 120, 20, 0.4) 30%,
+              transparent 70%
+            );
+            border-radius: 50%;
+            animation: base-glow 2s ease-in-out infinite;
+          }
+
+          .time-separator {
+            font-size: 60px;
+            color: #FF8C3C;
+            animation: nixie-glow 1.5s ease-in-out infinite;
+            margin: 0 10px;
           }
         `}</style>
         
-        <div className="tube-container relative">
-          <div className="tube-glow"></div>
-          <div className="ampm-indicator">{ampm}</div>
-          <div className="flex items-center justify-center space-x-8">
-            <div className="flex flex-col items-center space-y-2">
-              <span className="nixie-digit">{hours[0]}</span>
-              <span className="nixie-digit">{hours[1]}</span>
+        <div className="flex items-center space-x-4">
+          {/* Hours */}
+          <div className="nixie-tube">
+            <div className="tube-rails">
+              <div className="tube-rail tube-rail-left"></div>
+              <div className="tube-rail tube-rail-right"></div>
             </div>
-            <div className="flex flex-col space-y-8">
-              <div className="w-3 h-3 rounded-full bg-gradient-to-br from-orange-400 to-red-600" 
-                   style={{boxShadow: '0 0 16px rgba(255,140,20,0.8)', animation: 'glow-pulse 1s infinite'}}></div>
-              <div className="w-3 h-3 rounded-full bg-gradient-to-br from-orange-400 to-red-600" 
-                   style={{boxShadow: '0 0 16px rgba(255,140,20,0.8)', animation: 'glow-pulse 1s infinite'}}></div>
-            </div>
-            <div className="flex flex-col items-center space-y-2">
-              <span className="nixie-digit">{minutes[0]}</span>
-              <span className="nixie-digit">{minutes[1]}</span>
-            </div>
-            <div className="flex flex-col space-y-8">
-              <div className="w-3 h-3 rounded-full bg-gradient-to-br from-orange-400 to-red-600" 
-                   style={{boxShadow: '0 0 16px rgba(255,140,20,0.8)', animation: 'glow-pulse 1s infinite'}}></div>
-              <div className="w-3 h-3 rounded-full bg-gradient-to-br from-orange-400 to-red-600" 
-                   style={{boxShadow: '0 0 16px rgba(255,140,20,0.8)', animation: 'glow-pulse 1s infinite'}}></div>
-            </div>
-            <div className="flex flex-col items-center space-y-2">
-              <span className="nixie-digit">{seconds[0]}</span>
-              <span className="nixie-digit">{seconds[1]}</span>
-            </div>
+            <div className="nixie-digit">{hours[0]}</div>
+            <div className="nixie-digit">{hours[1]}</div>
           </div>
+
+          <div className="time-separator">:</div>
+
+          {/* Minutes */}
+          <div className="nixie-tube">
+            <div className="tube-rails">
+              <div className="tube-rail tube-rail-left"></div>
+              <div className="tube-rail tube-rail-right"></div>
+            </div>
+            <div className="nixie-digit">{minutes[0]}</div>
+            <div className="nixie-digit">{minutes[1]}</div>
+          </div>
+
+          <div className="time-separator">:</div>
+
+          {/* Seconds */}
+          <div className="nixie-tube">
+            <div className="tube-rails">
+              <div className="tube-rail tube-rail-left"></div>
+              <div className="tube-rail tube-rail-right"></div>
+            </div>
+            <div className="nixie-digit">{seconds[0]}</div>
+            <div className="nixie-digit">{seconds[1]}</div>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-4 mt-8">
+          <div className="tube-base"></div>
+          <div className="tube-base"></div>
+          <div className="tube-base"></div>
         </div>
       </div>
     );
   };
+
+  // ABOUT US MODAL
+  const AboutModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className={`max-w-2xl w-full rounded-2xl p-8 relative ${
+        darkMode ? 'bg-gray-800' : 'bg-white'
+      }`}>
+        <button
+          onClick={() => setShowAbout(false)}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+        >
+          <X className="h-6 w-6" />
+        </button>
+        
+        <h2 className={`text-3xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+          About Taqaddum (تقدّم)
+        </h2>
+        
+        <div className={`space-y-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          <p className="text-lg leading-relaxed">
+            <strong className="text-indigo-600">Taqaddum</strong> means <em>"Progress"</em> in Arabic. 
+            This project was born from a simple need: to track daily Islamic practices, academic goals, 
+            and personal development in one unified platform.
+          </p>
+          
+          <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-indigo-50'}`}>
+            <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              🎯 Why We Created This
+            </h3>
+            <ul className="space-y-2 text-sm">
+              <li>• Track 5 daily prayers (Salah) - even if Qaza</li>
+              <li>• Monitor academic & coding progress</li>
+              <li>• Stay accountable with fitness goals</li>
+              <li>• Learn core Islamic principles daily</li>
+              <li>• Fight addictions & maintain clean lifestyle</li>
+              <li>• See team progress & stay motivated together</li>
+            </ul>
+          </div>
+
+          <p>
+            As a Software Engineering student at <strong>Daffodil International University</strong>, 
+            I wanted to combine my faith, studies, and wellness into one trackable system. 
+            This isn't just another task app - it's a lifestyle tracker for modern Muslims 
+            striving for balance and continuous improvement.
+          </p>
+
+          <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-green-50'}`}>
+            <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              💡 Core Philosophy
+            </h3>
+            <p className="text-sm italic">
+              "The best of deeds are those done consistently, even if they are small." 
+              <br/>— Prophet Muhammad (PBUH)
+            </p>
+          </div>
+
+          <p>
+            Built with <span className="text-red-500">❤️</span> using React, Supabase, and Tailwind CSS. 
+            Open source and free for everyone.
+          </p>
+
+          <div className="flex justify-center pt-4">
+            <a
+              href="https://github.com/mehedyk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+            >
+              <span>View on GitHub</span>
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // CONTACT MODAL
+  const ContactModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className={`max-w-md w-full rounded-2xl p-8 relative ${
+        darkMode ? 'bg-gray-800' : 'bg-white'
+      }`}>
+        <button
+          onClick={() => setShowContact(false)}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+        >
+          <X className="h-6 w-6" />
+        </button>
+        
+        <h2 className={`text-3xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+          Contact
+        </h2>
+        
+        <div className={`space-y-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          <p className="text-lg">
+            Have questions, suggestions, or want to contribute? 
+            Feel free to reach out!
+          </p>
+
+          <div className={`p-6 rounded-xl text-center ${
+            darkMode ? 'bg-gray-700' : 'bg-gradient-to-br from-indigo-50 to-purple-50'
+          }`}>
+            <div className="mb-4">
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl">👨‍💻</span>
+              </div>
+              <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                S. M. Mehedy Kawser
+              </h3>
+              <p className="text-sm">Software Engineering Student</p>
+              <p className="text-xs mt-1">Daffodil International University</p>
+            </div>
+
+            <div className="space-y-3">
+              <a
+                href="https://github.com/mehedyk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center space-x-2 px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-300 transform hover:scale-105"
+              >
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                </svg>
+                <span className="font-medium">GitHub Profile</span>
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+
+          <div className={`text-sm text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p>🌟 Open for collaboration and feedback!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   // AUTH SCREEN WITH ECLIPSE DESIGN
   if (!user) {
@@ -552,6 +807,9 @@ export default function App() {
           ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
           : 'bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100'
       }`}>
+        {showAbout && <AboutModal />}
+        {showContact && <ContactModal />}
+
         <div className="absolute top-4 right-4 z-50">
           <button
             onClick={() => setDarkMode(!darkMode)}
@@ -595,9 +853,24 @@ export default function App() {
             <div className="flex-1 p-12">
               <div className="max-w-md mx-auto">
                 <div className="flex justify-end items-center space-x-6 mb-8 text-sm font-medium">
-                  <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>HOME</span>
-                  <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>ABOUT US</span>
-                  <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>CONTACT</span>
+                  <button 
+                    onClick={() => window.open('/', '_self')}
+                    className={darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}
+                  >
+                    HOME
+                  </button>
+                  <button 
+                    onClick={() => setShowAbout(true)}
+                    className={darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}
+                  >
+                    ABOUT US
+                  </button>
+                  <button 
+                    onClick={() => setShowContact(true)}
+                    className={darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}
+                  >
+                    CONTACT
+                  </button>
                   <span className={darkMode ? 'text-white' : 'text-gray-900'}>
                     {isLogin ? 'LOG IN' : 'SIGN UP'}
                   </span>
@@ -608,7 +881,7 @@ export default function App() {
                 </h2>
 
                 {authError && (
-                  <div className="mb-6 p-4 rounded-lg bg-red-50 border-l-4 border-red-500">
+                  <div className="mb-6 p-4 rounded-lg bg-red-50 border-l-4 border-red-500 animate-slideIn">
                     <div className="flex items-center">
                       <AlertCircle className="h-5 w-5 mr-3 text-red-500" />
                       <p className="text-sm font-medium text-red-700">{authError}</p>
@@ -617,7 +890,7 @@ export default function App() {
                 )}
 
                 {message && !authError && (
-                  <div className="mb-6 p-4 rounded-lg bg-green-50 border-l-4 border-green-500">
+                  <div className="mb-6 p-4 rounded-lg bg-green-50 border-l-4 border-green-500 animate-slideIn">
                     <p className="text-sm font-medium text-green-700">{message}</p>
                   </div>
                 )}
@@ -644,7 +917,7 @@ export default function App() {
                               ? 'bg-gray-700 border-gray-600 text-white focus:border-indigo-500'
                               : 'bg-gray-50 border-gray-300 focus:border-indigo-500 focus:bg-white'
                           }`}
-                          placeholder="Palmer Gallego"
+                          placeholder="Your Full Name"
                           disabled={loading}
                         />
                       </div>
@@ -716,7 +989,7 @@ export default function App() {
 
                   {isLogin && (
                     <div className="flex items-center justify-between text-sm">
-                      <label className="flex items-center space-x-2">
+                      <label className="flex items-center space-x-2 cursor-pointer">
                         <input type="checkbox" className="rounded" />
                         <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Remember Me</span>
                       </label>
@@ -729,7 +1002,7 @@ export default function App() {
                   <button
                     onClick={handleAuth}
                     disabled={loading}
-                    className="w-full bg-black text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-all duration-300 disabled:opacity-50"
+                    className="w-full bg-black text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-all duration-300 disabled:opacity-50 transform hover:scale-105"
                   >
                     {loading ? (
                       <div className="flex items-center justify-center">
@@ -753,7 +1026,7 @@ export default function App() {
                       setMessage(null);
                     }}
                     disabled={loading}
-                    className={`w-full py-3 rounded-xl font-medium transition-all duration-300 ${
+                    className={`w-full py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 ${
                       darkMode 
                         ? 'bg-gray-700 text-white hover:bg-gray-600' 
                         : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
@@ -784,7 +1057,7 @@ export default function App() {
     );
   }
 
-  // MAIN APP (LOGGED IN STATE) - Keep existing dashboard code
+  // MAIN APP (LOGGED IN STATE) - Rest of the dashboard code remains the same
   const mainTasks = tasks.filter(t => t.is_parent || t.task_type === 'simple');
   const completedMainTasks = mainTasks.filter(t => {
     if (t.task_type === 'simple') return t.completed;
@@ -953,95 +1226,6 @@ export default function App() {
                        completionRate > 0 ? '⭐ Every step counts! Continue!' :
                        '🤲 Bismillah! Let\'s begin today!'}
                     </p>
-                  </div>
-                </div>
-
-                <div className={`rounded-xl shadow-sm p-6 card-hover ${
-                  darkMode ? 'bg-gray-800' : 'bg-white'
-                }`}>
-                  <h3 className={`text-lg font-bold mb-4 flex items-center ${
-                    darkMode ? 'text-white' : 'text-gray-900'
-                  }`}>
-                    <Award className="h-5 w-5 text-yellow-500 mr-2" />
-                    Categories
-                  </h3>
-                  <div className="space-y-3">
-                    {taskTemplates.map(template => {
-                      const templateTasks = tasks.filter(t => t.task_id === template.id || t.parent_id === template.id);
-                      const mainTask = templateTasks.find(t => t.task_id === template.id);
-                      
-                      let isCompleted = false;
-                      let progress = 0;
-                      
-                      if (template.type === 'simple') {
-                        isCompleted = mainTask?.completed || false;
-                        progress = isCompleted ? 100 : 0;
-                      } else {
-                        const subtasks = templateTasks.filter(t => t.parent_id === template.id);
-                        if (subtasks.length > 0) {
-                          const completedSubtasks = subtasks.filter(st => st.completed);
-                          
-                          if (template.id === 'coding') {
-                            isCompleted = completedSubtasks.length > 0;
-                            progress = completedSubtasks.length > 0 ? 100 : 0;
-                          } else {
-                            isCompleted = completedSubtasks.length === subtasks.length;
-                            progress = Math.round((completedSubtasks.length / subtasks.length) * 100);
-                          }
-                        }
-                      }
-
-                      return (
-                        <div 
-                          key={template.id} 
-                          className={`flex items-center justify-between p-3 rounded-lg transition-all duration-300 cursor-pointer transform hover:scale-105 ${
-                            darkMode 
-                              ? 'bg-gray-700 hover:bg-gray-600' 
-                              : 'bg-gradient-to-r from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50'
-                          }`}
-                          onClick={() => {
-                            const taskElement = document.querySelector(`[data-task-id="${template.id}"]`);
-                            taskElement?.scrollIntoView({ behavior: 'smooth' });
-                          }}
-                        >
-                          <div className="flex items-center space-x-3">
-                            <span className="text-lg animate-bounce">{template.icon}</span>
-                            <div>
-                              <span className={`text-sm font-medium transition-colors ${
-                                isCompleted 
-                                  ? 'text-green-600' 
-                                  : darkMode ? 'text-gray-300' : 'text-gray-700'
-                              }`}>
-                                {template.name}
-                              </span>
-                              {template.type !== 'simple' && (
-                                <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                  {template.id === 'coding' ? 
-                                    (progress > 0 ? 'Completed!' : 'Not started') :
-                                    `${progress}% complete`
-                                  }
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {template.type !== 'simple' && (
-                              <div className={`w-12 rounded-full h-1.5 ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
-                                <div 
-                                  className="bg-gradient-to-r from-indigo-500 to-purple-600 h-1.5 rounded-full transition-all duration-500"
-                                  style={{ width: `${progress}%` }}
-                                />
-                              </div>
-                            )}
-                            {isCompleted ? (
-                              <CheckCircle className="h-5 w-5 text-green-500 animate-pulse" />
-                            ) : (
-                              <Circle className={`h-5 w-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
                   </div>
                 </div>
 
