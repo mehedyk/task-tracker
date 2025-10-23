@@ -446,7 +446,7 @@ export default function App() {
     </footer>
   );
 
-  // REALISTIC NIXIE TUBE CLOCK COMPONENT
+  // REALISTIC NIXIE TUBE CLOCK COMPONENT - MOBILE RESPONSIVE
   const NixieClock = () => {
     const [time, setTime] = useState(new Date());
 
@@ -461,83 +461,81 @@ export default function App() {
     const seconds = formatTime(time.getSeconds());
 
     return (
-      <div className="flex flex-col items-center justify-center">
+      <div className="flex flex-col items-center justify-center w-full px-4">
         <style>{`
           @keyframes nixie-glow {
             0%, 100% { 
               text-shadow: 
-                0 0 10px rgba(255, 140, 60, 1),
-                0 0 20px rgba(255, 120, 40, 0.8),
-                0 0 30px rgba(255, 100, 20, 0.6),
-                0 0 40px rgba(255, 80, 10, 0.4);
+                0 0 8px rgba(255, 140, 60, 1),
+                0 0 16px rgba(255, 120, 40, 0.8),
+                0 0 24px rgba(255, 100, 20, 0.6);
             }
             50% { 
               text-shadow: 
-                0 0 15px rgba(255, 140, 60, 1),
-                0 0 30px rgba(255, 120, 40, 0.9),
-                0 0 45px rgba(255, 100, 20, 0.7),
-                0 0 60px rgba(255, 80, 10, 0.5);
+                0 0 12px rgba(255, 140, 60, 1),
+                0 0 24px rgba(255, 120, 40, 0.9),
+                0 0 36px rgba(255, 100, 20, 0.7);
             }
           }
           
           @keyframes base-glow {
-            0%, 100% { box-shadow: 0 0 20px rgba(255, 140, 20, 0.6); }
-            50% { box-shadow: 0 0 30px rgba(255, 140, 20, 0.9); }
+            0%, 100% { box-shadow: 0 0 15px rgba(255, 140, 20, 0.5); }
+            50% { box-shadow: 0 0 25px rgba(255, 140, 20, 0.8); }
           }
 
           .nixie-tube {
             position: relative;
-            width: 180px;
-            height: 320px;
+            width: 140px;
+            height: 240px;
             background: linear-gradient(180deg, 
               rgba(40, 25, 15, 0.95) 0%,
               rgba(25, 15, 10, 0.98) 50%,
               rgba(20, 10, 5, 1) 100%
             );
-            border-radius: 80px;
-            border: 4px solid;
+            border-radius: 60px;
+            border: 3px solid;
             border-color: rgba(180, 120, 60, 0.4) rgba(120, 80, 40, 0.6) rgba(80, 50, 25, 0.8);
             box-shadow: 
-              inset 0 0 40px rgba(255, 140, 20, 0.1),
-              inset 0 0 20px rgba(0, 0, 0, 0.8),
-              0 10px 40px rgba(0, 0, 0, 0.9),
-              0 0 60px rgba(255, 120, 20, 0.15);
+              inset 0 0 30px rgba(255, 140, 20, 0.1),
+              inset 0 0 15px rgba(0, 0, 0, 0.8),
+              0 8px 30px rgba(0, 0, 0, 0.9),
+              0 0 50px rgba(255, 120, 20, 0.15);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             overflow: hidden;
           }
 
           .nixie-tube::before {
             content: '';
             position: absolute;
-            inset: 8px;
+            inset: 6px;
             background: radial-gradient(
               ellipse at center,
               rgba(255, 140, 20, 0.03) 0%,
               transparent 60%
             );
-            border-radius: 72px;
+            border-radius: 54px;
             pointer-events: none;
           }
 
           .nixie-tube::after {
             content: '';
             position: absolute;
-            top: 20px;
+            top: 15px;
             left: 50%;
             transform: translateX(-50%);
-            width: 30px;
-            height: 30px;
+            width: 20px;
+            height: 20px;
             background: radial-gradient(circle, 
               rgba(120, 80, 40, 0.8) 0%,
               rgba(80, 50, 25, 0.6) 50%,
               transparent 100%
             );
             border-radius: 50%;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
           }
 
           .tube-rails {
@@ -548,7 +546,7 @@ export default function App() {
 
           .tube-rail {
             position: absolute;
-            width: 12px;
+            width: 10px;
             height: 100%;
             background: linear-gradient(90deg,
               rgba(140, 100, 50, 0.6) 0%,
@@ -556,50 +554,50 @@ export default function App() {
               rgba(60, 40, 20, 0.6) 100%
             );
             box-shadow: 
-              inset 2px 0 4px rgba(0, 0, 0, 0.8),
-              inset -2px 0 4px rgba(0, 0, 0, 0.6);
+              inset 2px 0 3px rgba(0, 0, 0, 0.8),
+              inset -2px 0 3px rgba(0, 0, 0, 0.6);
           }
 
-          .tube-rail-left { left: 15px; border-radius: 6px 0 0 6px; }
-          .tube-rail-right { right: 15px; border-radius: 0 6px 6px 0; }
+          .tube-rail-left { left: 12px; border-radius: 5px 0 0 5px; }
+          .tube-rail-right { right: 12px; border-radius: 0 5px 5px 0; }
 
           .nixie-digit {
             font-family: 'Courier New', 'Monaco', monospace;
-            font-size: 80px;
+            font-size: 60px;
             font-weight: 700;
             color: #FF8C3C;
             animation: nixie-glow 2s ease-in-out infinite;
             position: relative;
             z-index: 2;
-            letter-spacing: -5px;
+            letter-spacing: -4px;
             text-align: center;
             width: 100%;
           }
 
           .tube-base {
-            width: 200px;
-            height: 50px;
+            width: 150px;
+            height: 40px;
             background: linear-gradient(180deg,
               rgba(140, 100, 50, 0.8) 0%,
               rgba(100, 70, 35, 0.9) 50%,
               rgba(60, 40, 20, 1) 100%
             );
-            border-radius: 25px;
+            border-radius: 20px;
             position: relative;
             box-shadow: 
-              0 10px 30px rgba(0, 0, 0, 0.8),
-              inset 0 -3px 10px rgba(0, 0, 0, 0.6);
+              0 8px 25px rgba(0, 0, 0, 0.8),
+              inset 0 -3px 8px rgba(0, 0, 0, 0.6);
             animation: base-glow 2s ease-in-out infinite;
           }
 
           .tube-base::after {
             content: '';
             position: absolute;
-            bottom: -20px;
+            bottom: -15px;
             left: 50%;
             transform: translateX(-50%);
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             background: radial-gradient(circle,
               rgba(255, 140, 20, 0.6) 0%,
               rgba(255, 120, 20, 0.4) 30%,
@@ -610,14 +608,60 @@ export default function App() {
           }
 
           .time-separator {
-            font-size: 60px;
+            font-size: 45px;
             color: #FF8C3C;
             animation: nixie-glow 1.5s ease-in-out infinite;
-            margin: 0 10px;
+            margin: 0 6px;
+          }
+
+          @media (max-width: 768px) {
+            .nixie-tube {
+              width: 100px;
+              height: 180px;
+              border-radius: 45px;
+              gap: 10px;
+            }
+            .nixie-digit {
+              font-size: 45px;
+            }
+            .tube-base {
+              width: 110px;
+              height: 32px;
+            }
+            .time-separator {
+              font-size: 35px;
+              margin: 0 4px;
+            }
+            .tube-rail {
+              width: 8px;
+            }
+          }
+
+          @media (max-width: 480px) {
+            .nixie-tube {
+              width: 75px;
+              height: 140px;
+              border-radius: 35px;
+              gap: 8px;
+            }
+            .nixie-digit {
+              font-size: 32px;
+            }
+            .tube-base {
+              width: 85px;
+              height: 26px;
+            }
+            .time-separator {
+              font-size: 28px;
+              margin: 0 2px;
+            }
+            .tube-rail {
+              width: 6px;
+            }
           }
         `}</style>
         
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-center">
           {/* Hours */}
           <div className="nixie-tube">
             <div className="tube-rails">
@@ -653,7 +697,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex items-center space-x-4 mt-8">
+        <div className="flex items-center justify-center space-x-3 mt-6">
           <div className="tube-base"></div>
           <div className="tube-base"></div>
           <div className="tube-base"></div>
@@ -824,38 +868,40 @@ export default function App() {
         </div>
 
         <div className="flex-1 flex items-center justify-center p-4">
-          <div className={`flex max-w-6xl w-full rounded-3xl overflow-hidden shadow-2xl ${
+          <div className={`flex flex-col lg:flex-row max-w-6xl w-full rounded-3xl overflow-hidden shadow-2xl ${
             darkMode ? 'bg-gray-800 bg-opacity-95' : 'bg-white'
           }`}>
-            {/* LEFT SIDE - CLOCK */}
-            <div className={`hidden lg:flex flex-1 flex-col items-center justify-center p-12 ${
+            {/* LEFT SIDE - CLOCK (VISIBLE ON ALL DEVICES) */}
+            <div className={`flex flex-col items-center justify-center p-8 lg:p-12 lg:flex-1 ${
               darkMode 
                 ? 'bg-gradient-to-br from-gray-900 to-gray-800' 
                 : 'bg-gradient-to-br from-gray-900 to-gray-800'
             } relative overflow-hidden`}>
-              <div className="absolute top-8 left-8">
-                <h2 className="text-white text-3xl font-bold tracking-tight">Taqaddum.</h2>
+              <div className="lg:absolute top-8 left-8 mb-4 lg:mb-0">
+                <h2 className="text-white text-2xl lg:text-3xl font-bold tracking-tight text-center lg:text-left">Taqaddum.</h2>
               </div>
               
-              <NixieClock />
+              <div className="my-6 lg:my-0">
+                <NixieClock />
+              </div>
               
-              <div className="absolute bottom-12 left-8">
-                <h1 className="text-white text-5xl font-bold mb-2">
+              <div className="lg:absolute bottom-12 left-8 text-center lg:text-left mt-4 lg:mt-0">
+                <h1 className="text-white text-3xl lg:text-5xl font-bold mb-2">
                   {isLogin ? 'Welcome Back!' : 'Welcome!'}
                 </h1>
-                <p className="text-gray-300 text-lg">
+                <p className="text-gray-300 text-base lg:text-lg">
                   {isLogin ? 'Sign in to continue' : 'Create your account'}
                 </p>
               </div>
             </div>
 
             {/* RIGHT SIDE - FORM */}
-            <div className="flex-1 p-12">
+            <div className="flex-1 p-8 lg:p-12">
               <div className="max-w-md mx-auto">
-                <div className="flex justify-end items-center space-x-6 mb-8 text-sm font-medium">
+                <div className="flex justify-end items-center space-x-4 lg:space-x-6 mb-8 text-xs lg:text-sm font-medium">
                   <button 
                     onClick={() => window.open('/', '_self')}
-                    className={darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}
+                    className={`${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'} hidden sm:inline`}
                   >
                     HOME
                   </button>
@@ -863,7 +909,7 @@ export default function App() {
                     onClick={() => setShowAbout(true)}
                     className={darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}
                   >
-                    ABOUT US
+                    ABOUT
                   </button>
                   <button 
                     onClick={() => setShowContact(true)}
