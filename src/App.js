@@ -109,6 +109,7 @@ export default function App() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [showAbout, setShowAbout] = useState(false);
   const [showContact, setShowContact] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const today = isoDateString();
 
@@ -422,6 +423,143 @@ export default function App() {
   };
 
   const Footer = () => (
+  const ForgotPasswordModal = () => {
+    const [resetEmail, setResetEmail] = useState('');
+    const [resetLoading, setResetLoading] = useState(false);
+    const [resetMessage, setResetMessage] = useState('');
+    const [resetError, setResetError] = useState('');
+
+    const handlePasswordReset = async () => {
+      if (!resetEmail) {
+        setResetError('Please enter your email');
+        return;
+      }
+      if (!/\S+@\S+\.\S+/.test(resetEmail)) {
+        setResetError('Invalid email format');
+        return;
+      }
+
+      setResetLoading(true);
+      setResetError('');
+      setResetMessage('');
+
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+
+        if (error) throw error;
+
+        setResetMessage('✅ Password reset link sent to your email!');
+        setTimeout(() => {
+          setShowForgotPassword(false);
+          setResetEmail('');
+          setResetMessage('');
+        }, 3000);
+      } catch (err) {
+        setResetError(err.message || 'Failed to send reset email');
+      } finally {
+        setResetLoading(false);
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className={`max-w-md w-full rounded-2xl p-8 relative ${
+          darkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
+          <button
+            onClick={() => {
+              setShowForgotPassword(false);
+              setResetEmail('');
+              setResetMessage('');
+              setResetError('');
+            }}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          
+          <h2 className={`text-3xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            Reset Password
+          </h2>
+          
+          <div className={`space-y-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <p>
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+
+            {resetError && (
+              <div className="p-4 rounded-lg bg-red-50 border-l-4 border-red-500">
+                <p className="text-sm font-medium text-red-700">{resetError}</p>
+              </div>
+            )}
+
+            {resetMessage && (
+              <div className="p-4 rounded-lg bg-green-50 border-l-4 border-green-500">
+                <p className="text-sm font-medium text-green-700">{resetMessage}</p>
+              </div>
+            )}
+
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${
+                darkMode ? 'text-gray-300' : 'text-gray-700'
+              }`}>Email Address</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lg">📧</span>
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => {
+                    setResetEmail(e.target.value.toLowerCase());
+                    setResetError('');
+                  }}
+                  className={`w-full pl-12 pr-4 py-3 border rounded-xl transition-all duration-300 ${
+                    darkMode
+                      ? 'bg-gray-700 border-gray-600 text-white focus:border-indigo-500'
+                      : 'bg-gray-50 border-gray-300 focus:border-indigo-500 focus:bg-white'
+                  }`}
+                  placeholder="your@email.com"
+                  disabled={resetLoading}
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={handlePasswordReset}
+              disabled={resetLoading}
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50"
+            >
+              {resetLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Sending...
+                </div>
+              ) : (
+                'Send Reset Link'
+              )}
+            </button>
+
+            <button
+              onClick={() => {
+                setShowForgotPassword(false);
+                setResetEmail('');
+                setResetMessage('');
+                setResetError('');
+              }}
+              className={`w-full py-3 rounded-xl font-medium transition-all duration-300 ${
+                darkMode 
+                  ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+              }`}
+            >
+              Back to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
     <footer className={`border-t mt-12 py-6 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`flex justify-center items-center space-x-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -446,7 +584,7 @@ export default function App() {
     </footer>
   );
 
-  // REALISTIC NIXIE TUBE CLOCK COMPONENT - MOBILE RESPONSIVE
+  // REALISTIC NIXIE TUBE CLOCK WITH DATE - MOBILE RESPONSIVE
   const NixieClock = () => {
     const [time, setTime] = useState(new Date());
 
@@ -456,12 +594,29 @@ export default function App() {
     }, []);
 
     const formatTime = (num) => String(num).padStart(2, '0');
+    const year = String(time.getFullYear()).slice(-2);
+    const month = formatTime(time.getMonth() + 1);
+    const day = formatTime(time.getDate());
     const hours = formatTime(time.getHours());
     const minutes = formatTime(time.getMinutes());
     const seconds = formatTime(time.getSeconds());
 
+    const TimeUnit = ({ digit1, digit2, label }) => (
+      <div className="flex flex-col items-center">
+        <div className="nixie-tube">
+          <div className="tube-rails">
+            <div className="tube-rail tube-rail-left"></div>
+            <div className="tube-rail tube-rail-right"></div>
+          </div>
+          <div className="nixie-digit">{digit1}</div>
+          <div className="nixie-digit">{digit2}</div>
+        </div>
+        <div className="tube-label">{label}</div>
+      </div>
+    );
+
     return (
-      <div className="flex flex-col items-center justify-center w-full px-4">
+      <div className="flex flex-col items-center justify-center w-full px-2">
         <style>{`
           @keyframes nixie-glow {
             0%, 100% { 
@@ -485,57 +640,40 @@ export default function App() {
 
           .nixie-tube {
             position: relative;
-            width: 140px;
-            height: 240px;
+            width: 80px;
+            height: 140px;
             background: linear-gradient(180deg, 
               rgba(40, 25, 15, 0.95) 0%,
               rgba(25, 15, 10, 0.98) 50%,
               rgba(20, 10, 5, 1) 100%
             );
-            border-radius: 60px;
-            border: 3px solid;
+            border-radius: 35px;
+            border: 2px solid;
             border-color: rgba(180, 120, 60, 0.4) rgba(120, 80, 40, 0.6) rgba(80, 50, 25, 0.8);
             box-shadow: 
-              inset 0 0 30px rgba(255, 140, 20, 0.1),
-              inset 0 0 15px rgba(0, 0, 0, 0.8),
-              0 8px 30px rgba(0, 0, 0, 0.9),
-              0 0 50px rgba(255, 120, 20, 0.15);
+              inset 0 0 20px rgba(255, 140, 20, 0.1),
+              inset 0 0 10px rgba(0, 0, 0, 0.8),
+              0 6px 20px rgba(0, 0, 0, 0.9),
+              0 0 40px rgba(255, 120, 20, 0.15);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            gap: 8px;
             overflow: hidden;
           }
 
           .nixie-tube::before {
             content: '';
             position: absolute;
-            inset: 6px;
+            inset: 4px;
             background: radial-gradient(
               ellipse at center,
               rgba(255, 140, 20, 0.03) 0%,
               transparent 60%
             );
-            border-radius: 54px;
+            border-radius: 31px;
             pointer-events: none;
-          }
-
-          .nixie-tube::after {
-            content: '';
-            position: absolute;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 20px;
-            height: 20px;
-            background: radial-gradient(circle, 
-              rgba(120, 80, 40, 0.8) 0%,
-              rgba(80, 50, 25, 0.6) 50%,
-              transparent 100%
-            );
-            border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
           }
 
           .tube-rails {
@@ -546,7 +684,7 @@ export default function App() {
 
           .tube-rail {
             position: absolute;
-            width: 10px;
+            width: 6px;
             height: 100%;
             background: linear-gradient(90deg,
               rgba(140, 100, 50, 0.6) 0%,
@@ -554,53 +692,83 @@ export default function App() {
               rgba(60, 40, 20, 0.6) 100%
             );
             box-shadow: 
-              inset 2px 0 3px rgba(0, 0, 0, 0.8),
-              inset -2px 0 3px rgba(0, 0, 0, 0.6);
+              inset 1px 0 2px rgba(0, 0, 0, 0.8),
+              inset -1px 0 2px rgba(0, 0, 0, 0.6);
           }
 
-          .tube-rail-left { left: 12px; border-radius: 5px 0 0 5px; }
-          .tube-rail-right { right: 12px; border-radius: 0 5px 5px 0; }
+          .tube-rail-left { left: 8px; border-radius: 3px 0 0 3px; }
+          .tube-rail-right { right: 8px; border-radius: 0 3px 3px 0; }
 
           .nixie-digit {
             font-family: 'Courier New', 'Monaco', monospace;
-            font-size: 60px;
+            font-size: 36px;
             font-weight: 700;
             color: #FF8C3C;
             animation: nixie-glow 2s ease-in-out infinite;
             position: relative;
             z-index: 2;
-            letter-spacing: -4px;
+            letter-spacing: -2px;
             text-align: center;
             width: 100%;
           }
 
-          .tube-base {
-            width: 150px;
-            height: 40px;
-            background: linear-gradient(180deg,
-              rgba(140, 100, 50, 0.8) 0%,
-              rgba(100, 70, 35, 0.9) 50%,
-              rgba(60, 40, 20, 1) 100%
-            );
-            border-radius: 20px;
-            position: relative;
-            box-shadow: 
-              0 8px 25px rgba(0, 0, 0, 0.8),
-              inset 0 -3px 8px rgba(0, 0, 0, 0.6);
-            animation: base-glow 2s ease-in-out infinite;
+          .tube-label {
+            margin-top: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: rgba(255, 140, 60, 0.9);
+            letter-spacing: 1px;
+            text-align: center;
           }
 
-          .tube-base::after {
-            content: '';
-            position: absolute;
-            bottom: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 30px;
-            height: 30px;
-            background: radial-gradient(circle,
-              rgba(255, 140, 20, 0.6) 0%,
-              rgba(255, 120, 20, 0.4) 30%,
+          .time-separator {
+            font-size: 28px;
+            color: #FF8C3C;
+            animation: nixie-glow 1.5s ease-in-out infinite;
+            margin: 0 2px;
+            padding-bottom: 20px;
+          }
+
+          @media (max-width: 640px) {
+            .nixie-tube {
+              width: 60px;
+              height: 110px;
+              border-radius: 28px;
+              gap: 6px;
+            }
+            .nixie-digit {
+              font-size: 28px;
+            }
+            .tube-label {
+              font-size: 8px;
+              margin-top: 6px;
+            }
+            .time-separator {
+              font-size: 22px;
+            }
+            .tube-rail {
+              width: 5px;
+            }
+          }
+        `}</style>
+        
+        <div className="flex items-end justify-center flex-wrap gap-1">
+          <TimeUnit digit1={year[0]} digit2={year[1]} label="Year" />
+          <div className="time-separator">:</div>
+          <TimeUnit digit1={month[0]} digit2={month[1]} label="Month" />
+          <div className="time-separator">:</div>
+          <TimeUnit digit1={day[0]} digit2={day[1]} label="Day" />
+          <div className="time-separator">:</div>
+          <TimeUnit digit1={hours[0]} digit2={hours[1]} label="Hour" />
+          <div className="time-separator">:</div>
+          <TimeUnit digit1={minutes[0]} digit2={minutes[1]} label="Min" />
+          <div className="time-separator">:</div>
+          <TimeUnit digit1={seconds[0]} digit2={seconds[1]} label="Sec" />
+        </div>
+      </div>
+    );
+  };20, 0.4) 30%,
               transparent 70%
             );
             border-radius: 50%;
@@ -706,76 +874,78 @@ export default function App() {
     );
   };
 
-  // ABOUT US MODAL
+  // ABOUT US MODAL - SCROLLABLE
   const AboutModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className={`max-w-2xl w-full rounded-2xl p-8 relative ${
+      <div className={`max-w-2xl w-full rounded-2xl relative max-h-[90vh] flex flex-col ${
         darkMode ? 'bg-gray-800' : 'bg-white'
       }`}>
         <button
           onClick={() => setShowAbout(false)}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
         >
           <X className="h-6 w-6" />
         </button>
         
-        <h2 className={`text-3xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-          About Taqaddum (تقدّم)
-        </h2>
-        
-        <div className={`space-y-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          <p className="text-lg leading-relaxed">
-            <strong className="text-indigo-600">Taqaddum</strong> means <em>"Progress"</em> in Arabic. 
-            This project was born from a simple need: to track daily Islamic practices, academic goals, 
-            and personal development in one unified platform.
-          </p>
+        <div className="p-8 overflow-y-auto">
+          <h2 className={`text-3xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            About Taqaddum (تقدّم)
+          </h2>
           
-          <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-indigo-50'}`}>
-            <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              🎯 Why We Created This
-            </h3>
-            <ul className="space-y-2 text-sm">
-              <li>• Track 5 daily prayers (Salah) - even if Qaza</li>
-              <li>• Monitor academic & coding progress</li>
-              <li>• Stay accountable with fitness goals</li>
-              <li>• Learn core Islamic principles daily</li>
-              <li>• Fight addictions & maintain clean lifestyle</li>
-              <li>• See team progress & stay motivated together</li>
-            </ul>
-          </div>
-
-          <p>
-            As a Software Engineering student at <strong>Daffodil International University</strong>, 
-            I wanted to combine my faith, studies, and wellness into one trackable system. 
-            This isn't just another task app - it's a lifestyle tracker for modern Muslims 
-            striving for balance and continuous improvement.
-          </p>
-
-          <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-green-50'}`}>
-            <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              💡 Core Philosophy
-            </h3>
-            <p className="text-sm italic">
-              "The best of deeds are those done consistently, even if they are small." 
-              <br/>— Prophet Muhammad (PBUH)
+          <div className={`space-y-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <p className="text-lg leading-relaxed">
+              <strong className="text-indigo-600">Taqaddum</strong> means <em>"Progress"</em> in Arabic. 
+              This project was born from a simple need: to track daily Islamic practices, academic goals, 
+              and personal development in one unified platform.
             </p>
-          </div>
+            
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-indigo-50'}`}>
+              <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                🎯 Why We Created This
+              </h3>
+              <ul className="space-y-2 text-sm">
+                <li>• Track 5 daily prayers (Salah) - even if Qaza</li>
+                <li>• Monitor academic & coding progress</li>
+                <li>• Stay accountable with fitness goals</li>
+                <li>• Learn core Islamic principles daily</li>
+                <li>• Fight addictions & maintain clean lifestyle</li>
+                <li>• See team progress & stay motivated together</li>
+              </ul>
+            </div>
 
-          <p>
-            Built with <span className="text-red-500">❤️</span> using React, Supabase, and Tailwind CSS. 
-            Open source and free for everyone.
-          </p>
+            <p>
+              As a Software Engineering student at <strong>Daffodil International University</strong>, 
+              I wanted to combine my faith, studies, and wellness into one trackable system. 
+              This isn't just another task app - it's a lifestyle tracker for modern Muslims 
+              striving for balance and continuous improvement.
+            </p>
 
-          <div className="flex justify-center pt-4">
-            <a
-              href="https://github.com/mehedyk"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-300 transform hover:scale-105"
-            >
-              <span>View on GitHub</span>
-              <ExternalLink className="h-4 w-4" />
-            </a>
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-green-50'}`}>
+              <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                💡 Core Philosophy
+              </h3>
+              <p className="text-sm italic">
+                "The best of deeds are those done consistently, even if they are small." 
+                <br/>— Prophet Muhammad (PBUH)
+              </p>
+            </div>
+
+            <p>
+              Built with <span className="text-red-500">❤️</span> using React, Supabase, and Tailwind CSS. 
+              Open source and free for everyone.
+            </p>
+
+            <div className="flex justify-center pt-4">
+              <a
+                href="https://github.com/mehedyk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+              >
+                <span>View on GitHub</span>
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </div>
           </div>
         </div>
       </div>
