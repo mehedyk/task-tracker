@@ -1,4 +1,4 @@
-// src/App.js
+// src/App.js - FIXED VERSION
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
 import { taskTemplates } from './config/taskTemplates';
@@ -96,7 +96,6 @@ export default function App() {
     return saved ? JSON.parse(saved) : false;
   });
 
-  // Auth/UI states
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -423,6 +422,347 @@ export default function App() {
   };
 
   const Footer = () => (
+    <footer className={`border-t mt-12 py-6 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className={`flex justify-center items-center space-x-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          <span>A</span>
+          <a 
+            href="https://github.com/mehedyk" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={`flex items-center space-x-1 font-medium transition-colors duration-200 hover:underline ${
+              darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-800'
+            }`}
+          >
+            <span>@mehedyk</span>
+            <ExternalLink className="h-3 w-3" />
+          </a>
+          <span>PRODUCT</span>
+        </div>
+        <div className={`text-center text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+          Taqaddum (تقدّم) - All rights reserved © {new Date().getFullYear()}
+        </div>
+      </div>
+    </footer>
+  );
+
+  const NixieClock = () => {
+    const [time, setTime] = useState(new Date());
+
+    useEffect(() => {
+      const timer = setInterval(() => setTime(new Date()), 1000);
+      return () => clearInterval(timer);
+    }, []);
+
+    const formatTime = (num) => String(num).padStart(2, '0');
+    const year = String(time.getFullYear()).slice(-2);
+    const month = formatTime(time.getMonth() + 1);
+    const day = formatTime(time.getDate());
+    const hours = formatTime(time.getHours());
+    const minutes = formatTime(time.getMinutes());
+    const seconds = formatTime(time.getSeconds());
+
+    const TimeUnit = ({ digit1, digit2, label }) => (
+      <div className="flex flex-col items-center">
+        <div className="nixie-tube">
+          <div className="tube-rails">
+            <div className="tube-rail tube-rail-left"></div>
+            <div className="tube-rail tube-rail-right"></div>
+          </div>
+          <div className="nixie-digit">{digit1}</div>
+          <div className="nixie-digit">{digit2}</div>
+        </div>
+        <div className="tube-label">{label}</div>
+      </div>
+    );
+
+    return (
+      <div className="flex flex-col items-center justify-center w-full px-2">
+        <style>{`
+          @keyframes nixie-glow {
+            0%, 100% { 
+              text-shadow: 
+                0 0 8px rgba(255, 140, 60, 1),
+                0 0 16px rgba(255, 120, 40, 0.8),
+                0 0 24px rgba(255, 100, 20, 0.6);
+            }
+            50% { 
+              text-shadow: 
+                0 0 12px rgba(255, 140, 60, 1),
+                0 0 24px rgba(255, 120, 40, 0.9),
+                0 0 36px rgba(255, 100, 20, 0.7);
+            }
+          }
+
+          .nixie-tube {
+            position: relative;
+            width: 80px;
+            height: 140px;
+            background: linear-gradient(180deg, 
+              rgba(40, 25, 15, 0.95) 0%,
+              rgba(25, 15, 10, 0.98) 50%,
+              rgba(20, 10, 5, 1) 100%
+            );
+            border-radius: 35px;
+            border: 2px solid;
+            border-color: rgba(180, 120, 60, 0.4) rgba(120, 80, 40, 0.6) rgba(80, 50, 25, 0.8);
+            box-shadow: 
+              inset 0 0 20px rgba(255, 140, 20, 0.1),
+              inset 0 0 10px rgba(0, 0, 0, 0.8),
+              0 6px 20px rgba(0, 0, 0, 0.9),
+              0 0 40px rgba(255, 120, 20, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            overflow: hidden;
+          }
+
+          .nixie-tube::before {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            background: radial-gradient(
+              ellipse at center,
+              rgba(255, 140, 20, 0.03) 0%,
+              transparent 60%
+            );
+            border-radius: 31px;
+            pointer-events: none;
+          }
+
+          .tube-rails {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+          }
+
+          .tube-rail {
+            position: absolute;
+            width: 6px;
+            height: 100%;
+            background: linear-gradient(90deg,
+              rgba(140, 100, 50, 0.6) 0%,
+              rgba(100, 70, 35, 0.8) 50%,
+              rgba(60, 40, 20, 0.6) 100%
+            );
+            box-shadow: 
+              inset 1px 0 2px rgba(0, 0, 0, 0.8),
+              inset -1px 0 2px rgba(0, 0, 0, 0.6);
+          }
+
+          .tube-rail-left { left: 8px; border-radius: 3px 0 0 3px; }
+          .tube-rail-right { right: 8px; border-radius: 0 3px 3px 0; }
+
+          .nixie-digit {
+            font-family: 'Courier New', 'Monaco', monospace;
+            font-size: 36px;
+            font-weight: 700;
+            color: #FF8C3C;
+            animation: nixie-glow 2s ease-in-out infinite;
+            position: relative;
+            z-index: 2;
+            letter-spacing: -2px;
+            text-align: center;
+            width: 100%;
+          }
+
+          .tube-label {
+            margin-top: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: rgba(255, 140, 60, 0.9);
+            letter-spacing: 1px;
+            text-align: center;
+          }
+
+          .time-separator {
+            font-size: 28px;
+            color: #FF8C3C;
+            animation: nixie-glow 1.5s ease-in-out infinite;
+            margin: 0 2px;
+            padding-bottom: 20px;
+          }
+
+          @media (max-width: 640px) {
+            .nixie-tube {
+              width: 60px;
+              height: 110px;
+              border-radius: 28px;
+              gap: 6px;
+            }
+            .nixie-digit {
+              font-size: 28px;
+            }
+            .tube-label {
+              font-size: 8px;
+              margin-top: 6px;
+            }
+            .time-separator {
+              font-size: 22px;
+            }
+            .tube-rail {
+              width: 5px;
+            }
+          }
+        `}</style>
+        
+        <div className="flex items-end justify-center flex-wrap gap-1">
+          <TimeUnit digit1={year[0]} digit2={year[1]} label="Year" />
+          <div className="time-separator">:</div>
+          <TimeUnit digit1={month[0]} digit2={month[1]} label="Month" />
+          <div className="time-separator">:</div>
+          <TimeUnit digit1={day[0]} digit2={day[1]} label="Day" />
+          <div className="time-separator">:</div>
+          <TimeUnit digit1={hours[0]} digit2={hours[1]} label="Hour" />
+          <div className="time-separator">:</div>
+          <TimeUnit digit1={minutes[0]} digit2={minutes[1]} label="Min" />
+          <div className="time-separator">:</div>
+          <TimeUnit digit1={seconds[0]} digit2={seconds[1]} label="Sec" />
+        </div>
+      </div>
+    );
+  };
+
+  const AboutModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className={`max-w-2xl w-full rounded-2xl relative max-h-[90vh] flex flex-col ${
+        darkMode ? 'bg-gray-800' : 'bg-white'
+      }`}>
+        <button
+          onClick={() => setShowAbout(false)}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
+        >
+          <X className="h-6 w-6" />
+        </button>
+        
+        <div className="p-8 overflow-y-auto">
+          <h2 className={`text-3xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            About Taqaddum (تقدّم)
+          </h2>
+          
+          <div className={`space-y-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <p className="text-lg leading-relaxed">
+              <strong className="text-indigo-600">Taqaddum</strong> means <em>"Progress"</em> in Arabic. 
+              This project was born from a simple need: to track daily Islamic practices, academic goals, 
+              and personal development in one unified platform.
+            </p>
+            
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-indigo-50'}`}>
+              <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                🎯 Why We Created This
+              </h3>
+              <ul className="space-y-2 text-sm">
+                <li>• Track 5 daily prayers (Salah) - even if Qaza</li>
+                <li>• Monitor academic & coding progress</li>
+                <li>• Stay accountable with fitness goals</li>
+                <li>• Learn core Islamic principles daily</li>
+                <li>• Fight addictions & maintain clean lifestyle</li>
+                <li>• See team progress & stay motivated together</li>
+              </ul>
+            </div>
+
+            <p>
+              As a Software Engineering student at <strong>Daffodil International University</strong>, 
+              I wanted to combine my faith, studies, and wellness into one trackable system. 
+              This isn't just another task app - it's a lifestyle tracker for modern Muslims 
+              striving for balance and continuous improvement.
+            </p>
+
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-green-50'}`}>
+              <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                💡 Core Philosophy
+              </h3>
+              <p className="text-sm italic">
+                "The best of deeds are those done consistently, even if they are small." 
+                <br/>— Prophet Muhammad (PBUH)
+              </p>
+            </div>
+
+            <p>
+              Built with <span className="text-red-500">❤️</span> using React, Supabase, and Tailwind CSS. 
+              Open source and free for everyone.
+            </p>
+
+            <div className="flex justify-center pt-4">
+              <a
+                href="https://github.com/mehedyk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+              >
+                <span>View on GitHub</span>
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const ContactModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className={`max-w-md w-full rounded-2xl p-8 relative ${
+        darkMode ? 'bg-gray-800' : 'bg-white'
+      }`}>
+        <button
+          onClick={() => setShowContact(false)}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+        >
+          <X className="h-6 w-6" />
+        </button>
+        
+        <h2 className={`text-3xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+          Contact
+        </h2>
+        
+        <div className={`space-y-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          <p className="text-lg">
+            Have questions, suggestions, or want to contribute? 
+            Feel free to reach out!
+          </p>
+
+          <div className={`p-6 rounded-xl text-center ${
+            darkMode ? 'bg-gray-700' : 'bg-gradient-to-br from-indigo-50 to-purple-50'
+          }`}>
+            <div className="mb-4">
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl">👨‍💻</span>
+              </div>
+              <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                S. M. Mehedy Kawser
+              </h3>
+              <p className="text-sm">Software Engineering Student</p>
+              <p className="text-xs mt-1">Daffodil International University</p>
+            </div>
+
+            <div className="space-y-3">
+              <a
+                href="https://github.com/mehedyk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center space-x-2 px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-300 transform hover:scale-105"
+              >
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                </svg>
+                <span className="font-medium">GitHub Profile</span>
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+
+          <div className={`text-sm text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p>🌟 Open for collaboration and feedback!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const ForgotPasswordModal = () => {
     const [resetEmail, setResetEmail] = useState('');
     const [resetLoading, setResetLoading] = useState(false);
@@ -560,460 +900,7 @@ export default function App() {
       </div>
     );
   };
-    <footer className={`border-t mt-12 py-6 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className={`flex justify-center items-center space-x-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          <span>A</span>
-          <a 
-            href="https://github.com/mehedyk" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className={`flex items-center space-x-1 font-medium transition-colors duration-200 hover:underline ${
-              darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-800'
-            }`}
-          >
-            <span>@mehedyk</span>
-            <ExternalLink className="h-3 w-3" />
-          </a>
-          <span>PRODUCT</span>
-        </div>
-        <div className={`text-center text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-          Taqaddum (تقدّم) - All rights reserved © {new Date().getFullYear()}
-        </div>
-      </div>
-    </footer>
-  );
 
-  // REALISTIC NIXIE TUBE CLOCK WITH DATE - MOBILE RESPONSIVE
-  const NixieClock = () => {
-    const [time, setTime] = useState(new Date());
-
-    useEffect(() => {
-      const timer = setInterval(() => setTime(new Date()), 1000);
-      return () => clearInterval(timer);
-    }, []);
-
-    const formatTime = (num) => String(num).padStart(2, '0');
-    const year = String(time.getFullYear()).slice(-2);
-    const month = formatTime(time.getMonth() + 1);
-    const day = formatTime(time.getDate());
-    const hours = formatTime(time.getHours());
-    const minutes = formatTime(time.getMinutes());
-    const seconds = formatTime(time.getSeconds());
-
-    const TimeUnit = ({ digit1, digit2, label }) => (
-      <div className="flex flex-col items-center">
-        <div className="nixie-tube">
-          <div className="tube-rails">
-            <div className="tube-rail tube-rail-left"></div>
-            <div className="tube-rail tube-rail-right"></div>
-          </div>
-          <div className="nixie-digit">{digit1}</div>
-          <div className="nixie-digit">{digit2}</div>
-        </div>
-        <div className="tube-label">{label}</div>
-      </div>
-    );
-
-    return (
-      <div className="flex flex-col items-center justify-center w-full px-2">
-        <style>{`
-          @keyframes nixie-glow {
-            0%, 100% { 
-              text-shadow: 
-                0 0 8px rgba(255, 140, 60, 1),
-                0 0 16px rgba(255, 120, 40, 0.8),
-                0 0 24px rgba(255, 100, 20, 0.6);
-            }
-            50% { 
-              text-shadow: 
-                0 0 12px rgba(255, 140, 60, 1),
-                0 0 24px rgba(255, 120, 40, 0.9),
-                0 0 36px rgba(255, 100, 20, 0.7);
-            }
-          }
-          
-          @keyframes base-glow {
-            0%, 100% { box-shadow: 0 0 15px rgba(255, 140, 20, 0.5); }
-            50% { box-shadow: 0 0 25px rgba(255, 140, 20, 0.8); }
-          }
-
-          .nixie-tube {
-            position: relative;
-            width: 80px;
-            height: 140px;
-            background: linear-gradient(180deg, 
-              rgba(40, 25, 15, 0.95) 0%,
-              rgba(25, 15, 10, 0.98) 50%,
-              rgba(20, 10, 5, 1) 100%
-            );
-            border-radius: 35px;
-            border: 2px solid;
-            border-color: rgba(180, 120, 60, 0.4) rgba(120, 80, 40, 0.6) rgba(80, 50, 25, 0.8);
-            box-shadow: 
-              inset 0 0 20px rgba(255, 140, 20, 0.1),
-              inset 0 0 10px rgba(0, 0, 0, 0.8),
-              0 6px 20px rgba(0, 0, 0, 0.9),
-              0 0 40px rgba(255, 120, 20, 0.15);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            overflow: hidden;
-          }
-
-          .nixie-tube::before {
-            content: '';
-            position: absolute;
-            inset: 4px;
-            background: radial-gradient(
-              ellipse at center,
-              rgba(255, 140, 20, 0.03) 0%,
-              transparent 60%
-            );
-            border-radius: 31px;
-            pointer-events: none;
-          }
-
-          .tube-rails {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-          }
-
-          .tube-rail {
-            position: absolute;
-            width: 6px;
-            height: 100%;
-            background: linear-gradient(90deg,
-              rgba(140, 100, 50, 0.6) 0%,
-              rgba(100, 70, 35, 0.8) 50%,
-              rgba(60, 40, 20, 0.6) 100%
-            );
-            box-shadow: 
-              inset 1px 0 2px rgba(0, 0, 0, 0.8),
-              inset -1px 0 2px rgba(0, 0, 0, 0.6);
-          }
-
-          .tube-rail-left { left: 8px; border-radius: 3px 0 0 3px; }
-          .tube-rail-right { right: 8px; border-radius: 0 3px 3px 0; }
-
-          .nixie-digit {
-            font-family: 'Courier New', 'Monaco', monospace;
-            font-size: 36px;
-            font-weight: 700;
-            color: #FF8C3C;
-            animation: nixie-glow 2s ease-in-out infinite;
-            position: relative;
-            z-index: 2;
-            letter-spacing: -2px;
-            text-align: center;
-            width: 100%;
-          }
-
-          .tube-label {
-            margin-top: 8px;
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: rgba(255, 140, 60, 0.9);
-            letter-spacing: 1px;
-            text-align: center;
-          }
-
-          .time-separator {
-            font-size: 28px;
-            color: #FF8C3C;
-            animation: nixie-glow 1.5s ease-in-out infinite;
-            margin: 0 2px;
-            padding-bottom: 20px;
-          }
-
-          @media (max-width: 640px) {
-            .nixie-tube {
-              width: 60px;
-              height: 110px;
-              border-radius: 28px;
-              gap: 6px;
-            }
-            .nixie-digit {
-              font-size: 28px;
-            }
-            .tube-label {
-              font-size: 8px;
-              margin-top: 6px;
-            }
-            .time-separator {
-              font-size: 22px;
-            }
-            .tube-rail {
-              width: 5px;
-            }
-          }
-        `}</style>
-        
-        <div className="flex items-end justify-center flex-wrap gap-1">
-          <TimeUnit digit1={year[0]} digit2={year[1]} label="Year" />
-          <div className="time-separator">:</div>
-          <TimeUnit digit1={month[0]} digit2={month[1]} label="Month" />
-          <div className="time-separator">:</div>
-          <TimeUnit digit1={day[0]} digit2={day[1]} label="Day" />
-          <div className="time-separator">:</div>
-          <TimeUnit digit1={hours[0]} digit2={hours[1]} label="Hour" />
-          <div className="time-separator">:</div>
-          <TimeUnit digit1={minutes[0]} digit2={minutes[1]} label="Min" />
-          <div className="time-separator">:</div>
-          <TimeUnit digit1={seconds[0]} digit2={seconds[1]} label="Sec" />
-        </div>
-      </div>
-    );
-  };20, 0.4) 30%,
-              transparent 70%
-            );
-            border-radius: 50%;
-            animation: base-glow 2s ease-in-out infinite;
-          }
-
-          .time-separator {
-            font-size: 45px;
-            color: #FF8C3C;
-            animation: nixie-glow 1.5s ease-in-out infinite;
-            margin: 0 6px;
-          }
-
-          @media (max-width: 768px) {
-            .nixie-tube {
-              width: 100px;
-              height: 180px;
-              border-radius: 45px;
-              gap: 10px;
-            }
-            .nixie-digit {
-              font-size: 45px;
-            }
-            .tube-base {
-              width: 110px;
-              height: 32px;
-            }
-            .time-separator {
-              font-size: 35px;
-              margin: 0 4px;
-            }
-            .tube-rail {
-              width: 8px;
-            }
-          }
-
-          @media (max-width: 480px) {
-            .nixie-tube {
-              width: 75px;
-              height: 140px;
-              border-radius: 35px;
-              gap: 8px;
-            }
-            .nixie-digit {
-              font-size: 32px;
-            }
-            .tube-base {
-              width: 85px;
-              height: 26px;
-            }
-            .time-separator {
-              font-size: 28px;
-              margin: 0 2px;
-            }
-            .tube-rail {
-              width: 6px;
-            }
-          }
-        `}</style>
-        
-        <div className="flex items-center justify-center">
-          {/* Hours */}
-          <div className="nixie-tube">
-            <div className="tube-rails">
-              <div className="tube-rail tube-rail-left"></div>
-              <div className="tube-rail tube-rail-right"></div>
-            </div>
-            <div className="nixie-digit">{hours[0]}</div>
-            <div className="nixie-digit">{hours[1]}</div>
-          </div>
-
-          <div className="time-separator">:</div>
-
-          {/* Minutes */}
-          <div className="nixie-tube">
-            <div className="tube-rails">
-              <div className="tube-rail tube-rail-left"></div>
-              <div className="tube-rail tube-rail-right"></div>
-            </div>
-            <div className="nixie-digit">{minutes[0]}</div>
-            <div className="nixie-digit">{minutes[1]}</div>
-          </div>
-
-          <div className="time-separator">:</div>
-
-          {/* Seconds */}
-          <div className="nixie-tube">
-            <div className="tube-rails">
-              <div className="tube-rail tube-rail-left"></div>
-              <div className="tube-rail tube-rail-right"></div>
-            </div>
-            <div className="nixie-digit">{seconds[0]}</div>
-            <div className="nixie-digit">{seconds[1]}</div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-center space-x-3 mt-6">
-          <div className="tube-base"></div>
-          <div className="tube-base"></div>
-          <div className="tube-base"></div>
-        </div>
-      </div>
-    );
-  };
-
-  // ABOUT US MODAL - SCROLLABLE
-  const AboutModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className={`max-w-2xl w-full rounded-2xl relative max-h-[90vh] flex flex-col ${
-        darkMode ? 'bg-gray-800' : 'bg-white'
-      }`}>
-        <button
-          onClick={() => setShowAbout(false)}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
-        >
-          <X className="h-6 w-6" />
-        </button>
-        
-        <div className="p-8 overflow-y-auto">
-          <h2 className={`text-3xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            About Taqaddum (تقدّم)
-          </h2>
-          
-          <div className={`space-y-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            <p className="text-lg leading-relaxed">
-              <strong className="text-indigo-600">Taqaddum</strong> means <em>"Progress"</em> in Arabic. 
-              This project was born from a simple need: to track daily Islamic practices, academic goals, 
-              and personal development in one unified platform.
-            </p>
-            
-            <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-indigo-50'}`}>
-              <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                🎯 Why We Created This
-              </h3>
-              <ul className="space-y-2 text-sm">
-                <li>• Track 5 daily prayers (Salah) - even if Qaza</li>
-                <li>• Monitor academic & coding progress</li>
-                <li>• Stay accountable with fitness goals</li>
-                <li>• Learn core Islamic principles daily</li>
-                <li>• Fight addictions & maintain clean lifestyle</li>
-                <li>• See team progress & stay motivated together</li>
-              </ul>
-            </div>
-
-            <p>
-              As a Software Engineering student at <strong>Daffodil International University</strong>, 
-              I wanted to combine my faith, studies, and wellness into one trackable system. 
-              This isn't just another task app - it's a lifestyle tracker for modern Muslims 
-              striving for balance and continuous improvement.
-            </p>
-
-            <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-green-50'}`}>
-              <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                💡 Core Philosophy
-              </h3>
-              <p className="text-sm italic">
-                "The best of deeds are those done consistently, even if they are small." 
-                <br/>— Prophet Muhammad (PBUH)
-              </p>
-            </div>
-
-            <p>
-              Built with <span className="text-red-500">❤️</span> using React, Supabase, and Tailwind CSS. 
-              Open source and free for everyone.
-            </p>
-
-            <div className="flex justify-center pt-4">
-              <a
-                href="https://github.com/mehedyk"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-300 transform hover:scale-105"
-              >
-                <span>View on GitHub</span>
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // CONTACT MODAL
-  const ContactModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className={`max-w-md w-full rounded-2xl p-8 relative ${
-        darkMode ? 'bg-gray-800' : 'bg-white'
-      }`}>
-        <button
-          onClick={() => setShowContact(false)}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-        >
-          <X className="h-6 w-6" />
-        </button>
-        
-        <h2 className={`text-3xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-          Contact
-        </h2>
-        
-        <div className={`space-y-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          <p className="text-lg">
-            Have questions, suggestions, or want to contribute? 
-            Feel free to reach out!
-          </p>
-
-          <div className={`p-6 rounded-xl text-center ${
-            darkMode ? 'bg-gray-700' : 'bg-gradient-to-br from-indigo-50 to-purple-50'
-          }`}>
-            <div className="mb-4">
-              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl">👨‍💻</span>
-              </div>
-              <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                S. M. Mehedy Kawser
-              </h3>
-              <p className="text-sm">Software Engineering Student</p>
-              <p className="text-xs mt-1">Daffodil International University</p>
-            </div>
-
-            <div className="space-y-3">
-              <a
-                href="https://github.com/mehedyk"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center space-x-2 px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-300 transform hover:scale-105"
-              >
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
-                </svg>
-                <span className="font-medium">GitHub Profile</span>
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </div>
-          </div>
-
-          <div className={`text-sm text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            <p>🌟 Open for collaboration and feedback!</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // AUTH SCREEN WITH ECLIPSE DESIGN
   if (!user) {
     return (
       <div className={`min-h-screen flex flex-col ${
@@ -1023,6 +910,7 @@ export default function App() {
       }`}>
         {showAbout && <AboutModal />}
         {showContact && <ContactModal />}
+        {showForgotPassword && <ForgotPasswordModal />}
 
         <div className="absolute top-4 right-4 z-50">
           <button
@@ -1041,7 +929,6 @@ export default function App() {
           <div className={`flex flex-col lg:flex-row max-w-6xl w-full rounded-3xl overflow-hidden shadow-2xl ${
             darkMode ? 'bg-gray-800 bg-opacity-95' : 'bg-white'
           }`}>
-            {/* LEFT SIDE - CLOCK (VISIBLE ON ALL DEVICES) */}
             <div className={`flex flex-col items-center justify-center p-8 lg:p-12 lg:flex-1 ${
               darkMode 
                 ? 'bg-gradient-to-br from-gray-900 to-gray-800' 
@@ -1065,7 +952,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* RIGHT SIDE - FORM */}
             <div className="flex-1 p-8 lg:p-12">
               <div className="max-w-md mx-auto">
                 <div className="flex justify-end items-center space-x-4 lg:space-x-6 mb-8 text-xs lg:text-sm font-medium">
@@ -1209,7 +1095,10 @@ export default function App() {
                         <input type="checkbox" className="rounded" />
                         <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Remember Me</span>
                       </label>
-                      <button className={darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}>
+                      <button 
+                        onClick={() => setShowForgotPassword(true)}
+                        className={darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}
+                      >
                         Forgot Password?
                       </button>
                     </div>
@@ -1273,7 +1162,6 @@ export default function App() {
     );
   }
 
-  // MAIN APP (LOGGED IN STATE) - Rest of the dashboard code remains the same
   const mainTasks = tasks.filter(t => t.is_parent || t.task_type === 'simple');
   const completedMainTasks = mainTasks.filter(t => {
     if (t.task_type === 'simple') return t.completed;
@@ -1602,4 +1490,4 @@ export default function App() {
       <Footer />
     </div>
   );
-}
+}-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
