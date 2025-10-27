@@ -1,4 +1,4 @@
-// src/components/EnhancedReports.js - FIXED VERSION
+// src/components/EnhancedReports.js
 import React, { useState, useEffect } from 'react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -13,7 +13,18 @@ import { taskTemplates } from '../config/taskTemplates';
 
 const COLORS = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16'];
 
-const EnhancedReports = ({ user, weeklyData, allUsersProgress }) => {
+// Dark mode friendly colors
+const DARK_COLORS = {
+  primary: '#818CF8',
+  success: '#34D399',
+  warning: '#FBBF24',
+  danger: '#F87171',
+  purple: '#A78BFA',
+  cyan: '#22D3EE',
+  lime: '#A3E635'
+};
+
+const EnhancedReports = ({ user, weeklyData, allUsersProgress, darkMode }) => {
   const [selectedReport, setSelectedReport] = useState('overview');
   const [loading, setLoading] = useState(false);
   const [monthlyData, setMonthlyData] = useState([]);
@@ -34,14 +45,12 @@ const EnhancedReports = ({ user, weeklyData, allUsersProgress }) => {
     { id: 'team', name: 'Team', icon: Users },
   ];
 
-  // Load monthly data when component mounts
   useEffect(() => {
     if (user && selectedReport === 'monthly' && monthlyData.length === 0) {
       loadMonthlyData();
     }
   }, [user, selectedReport]);
 
-  // Calculate basic stats from weekly data
   useEffect(() => {
     if (weeklyData.length > 0) {
       const monthlyAverage = Math.round(
@@ -120,7 +129,6 @@ const EnhancedReports = ({ user, weeklyData, allUsersProgress }) => {
       
       setMonthlyData(data);
       
-      // Update stats with monthly data
       const monthlyAvg = Math.round(
         data.reduce((sum, day) => sum + day.percentage, 0) / data.length
       );
@@ -141,7 +149,6 @@ const EnhancedReports = ({ user, weeklyData, allUsersProgress }) => {
     }
   };
 
-  // Calculate current stats
   const currentUser = allUsersProgress.find(u => u.user.id === user?.id);
   const completedToday = currentUser?.completed || 0;
   const totalTasks = currentUser?.total || 0;
@@ -152,7 +159,6 @@ const EnhancedReports = ({ user, weeklyData, allUsersProgress }) => {
     Math.max(allUsersProgress.length, 1)
   );
 
-  // Category data from current progress
   const categoryData = taskTemplates.map((template, index) => {
     const userTasks = currentUser?.tasks?.filter(t => 
       t.task_id === template.id || t.parent_id === template.id
@@ -180,11 +186,10 @@ const EnhancedReports = ({ user, weeklyData, allUsersProgress }) => {
       fullName: template.name,
       icon: template.icon,
       completionRate,
-      color: COLORS[index % COLORS.length]
+      color: darkMode ? Object.values(DARK_COLORS)[index % 7] : COLORS[index % COLORS.length]
     };
   });
 
-  // Day of week analysis
   const dayOfWeekData = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
     const daysData = monthlyData.filter(d => d.dayOfWeek === index);
     return {
@@ -195,17 +200,41 @@ const EnhancedReports = ({ user, weeklyData, allUsersProgress }) => {
     };
   });
 
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className={`p-3 rounded-lg shadow-lg border ${
+          darkMode 
+            ? 'bg-gray-800 border-gray-600 text-white' 
+            : 'bg-white border-gray-200 text-gray-900'
+        }`}>
+          <p className="font-semibold mb-1">{label}</p>
+          {payload.map((entry, index) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {entry.name}: {entry.value}{entry.name.includes('%') || entry.name.includes('Rate') ? '%' : ''}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className={`rounded-xl shadow-sm p-4 sm:p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex flex-wrap gap-2 mb-6">
           {reports.map(({ id, name, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setSelectedReport(id)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+              className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm ${
                 selectedReport === id
-                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
+                  ? darkMode
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
+                    : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
+                  : darkMode
+                  ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-indigo-600'
               }`}
             >
@@ -215,84 +244,149 @@ const EnhancedReports = ({ user, weeklyData, allUsersProgress }) => {
           ))}
         </div>
 
-        {/* Overview Dashboard */}
         {selectedReport === 'overview' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <Target className="h-6 w-6 text-indigo-500 mr-2" />
+            <h2 className={`text-xl sm:text-2xl font-bold mb-6 flex items-center ${
+              darkMode ? 'text-white' : 'text-gray-900'
+            }`}>
+              <Target className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-500 mr-2" />
               📊 Progress Overview
             </h2>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 text-center card-hover">
-                <div className="text-2xl font-bold text-green-600">{completionRate}%</div>
-                <div className="text-sm text-green-700 font-medium">Today</div>
-                <div className="text-xs text-green-600">{completedToday}/{totalTasks} tasks</div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              <div className={`rounded-lg p-4 text-center card-hover ${
+                darkMode 
+                  ? 'bg-gradient-to-br from-green-900/50 to-emerald-900/50 border border-green-700/50'
+                  : 'bg-gradient-to-r from-green-50 to-emerald-50'
+              }`}>
+                <div className={`text-2xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                  {completionRate}%
+                </div>
+                <div className={`text-sm font-medium ${darkMode ? 'text-green-300' : 'text-green-700'}`}>
+                  Today
+                </div>
+                <div className={`text-xs ${darkMode ? 'text-green-400/80' : 'text-green-600'}`}>
+                  {completedToday}/{totalTasks} tasks
+                </div>
               </div>
 
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 text-center card-hover">
-                <div className="text-2xl font-bold text-indigo-600">{basicStats.monthlyAverage}%</div>
-                <div className="text-sm text-indigo-700 font-medium">Weekly Avg</div>
-                <div className="text-xs text-indigo-600">last 7 days</div>
+              <div className={`rounded-lg p-4 text-center card-hover ${
+                darkMode 
+                  ? 'bg-gradient-to-br from-blue-900/50 to-indigo-900/50 border border-indigo-700/50'
+                  : 'bg-gradient-to-r from-blue-50 to-indigo-50'
+              }`}>
+                <div className={`text-2xl font-bold ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                  {basicStats.monthlyAverage}%
+                </div>
+                <div className={`text-sm font-medium ${darkMode ? 'text-indigo-300' : 'text-indigo-700'}`}>
+                  Weekly Avg
+                </div>
+                <div className={`text-xs ${darkMode ? 'text-indigo-400/80' : 'text-indigo-600'}`}>
+                  last 7 days
+                </div>
               </div>
 
-              <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4 text-center card-hover">
-                <div className="text-2xl font-bold text-orange-600">{basicStats.currentStreak}</div>
-                <div className="text-sm text-orange-700 font-medium">Streak</div>
-                <div className="text-xs text-orange-600">days 🔥</div>
+              <div className={`rounded-lg p-4 text-center card-hover ${
+                darkMode 
+                  ? 'bg-gradient-to-br from-orange-900/50 to-red-900/50 border border-orange-700/50'
+                  : 'bg-gradient-to-r from-orange-50 to-red-50'
+              }`}>
+                <div className={`text-2xl font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                  {basicStats.currentStreak}
+                </div>
+                <div className={`text-sm font-medium ${darkMode ? 'text-orange-300' : 'text-orange-700'}`}>
+                  Streak
+                </div>
+                <div className={`text-xs ${darkMode ? 'text-orange-400/80' : 'text-orange-600'}`}>
+                  days 🔥
+                </div>
               </div>
 
-              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg p-4 text-center card-hover">
-                <div className="text-2xl font-bold text-yellow-600">{basicStats.perfectDays}</div>
-                <div className="text-sm text-yellow-700 font-medium">Perfect Days</div>
-                <div className="text-xs text-yellow-600">this week 🏆</div>
+              <div className={`rounded-lg p-4 text-center card-hover ${
+                darkMode 
+                  ? 'bg-gradient-to-br from-yellow-900/50 to-amber-900/50 border border-yellow-700/50'
+                  : 'bg-gradient-to-r from-yellow-50 to-amber-50'
+              }`}>
+                <div className={`text-2xl font-bold ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
+                  {basicStats.perfectDays}
+                </div>
+                <div className={`text-sm font-medium ${darkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>
+                  Perfect Days
+                </div>
+                <div className={`text-xs ${darkMode ? 'text-yellow-400/80' : 'text-yellow-600'}`}>
+                  this week 🏆
+                </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6">
+            <div className={`rounded-lg p-6 ${
+              darkMode 
+                ? 'bg-gradient-to-r from-green-900/30 to-blue-900/30 border border-green-700/30'
+                : 'bg-gradient-to-r from-green-50 to-blue-50'
+            }`}>
               <div className="text-center">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">🌟 Islamic Motivation</h3>
-                <p className="text-gray-700 mb-3">
+                <h3 className={`text-lg font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  🌟 Islamic Motivation
+                </h3>
+                <p className={`mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   {completionRate >= 80 ? "🎉 Alhamdulillah! Excellent progress today!" :
                    completionRate >= 60 ? "💪 MashaAllah! Keep up the great work!" :
                    completionRate >= 40 ? "🌱 Good start! Allah rewards every effort!" :
                    "🤲 Bismillah! Begin with Allah's blessing!"}
                 </p>
-                <div className="flex justify-center flex-wrap gap-4 text-sm">
-                  <span className="bg-white px-3 py-1 rounded-full">🔥 Streak: {basicStats.currentStreak} days</span>
-                  <span className="bg-white px-3 py-1 rounded-full">🏆 Best: {basicStats.bestStreak} days</span>
-                  <span className="bg-white px-3 py-1 rounded-full">✨ Perfect: {basicStats.perfectDays} days</span>
+                <div className="flex justify-center flex-wrap gap-2 sm:gap-4 text-sm">
+                  <span className={`px-3 py-1 rounded-full ${
+                    darkMode ? 'bg-gray-700 text-gray-200' : 'bg-white text-gray-800'
+                  }`}>
+                    🔥 Streak: {basicStats.currentStreak} days
+                  </span>
+                  <span className={`px-3 py-1 rounded-full ${
+                    darkMode ? 'bg-gray-700 text-gray-200' : 'bg-white text-gray-800'
+                  }`}>
+                    🏆 Best: {basicStats.bestStreak} days
+                  </span>
+                  <span className={`px-3 py-1 rounded-full ${
+                    darkMode ? 'bg-gray-700 text-gray-200' : 'bg-white text-gray-800'
+                  }`}>
+                    ✨ Perfect: {basicStats.perfectDays} days
+                  </span>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Weekly Trends */}
         {selectedReport === 'weekly' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <TrendingUp className="h-6 w-6 text-indigo-500 mr-2" />
+            <h2 className={`text-xl sm:text-2xl font-bold mb-6 flex items-center ${
+              darkMode ? 'text-white' : 'text-gray-900'
+            }`}>
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-500 mr-2" />
               📈 Weekly Progress
             </h2>
             
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="h-80">
+            <div className={`rounded-lg p-4 ${darkMode ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
+              <div className="h-64 sm:h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={weeklyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis domain={[0, 100]} />
-                    <Tooltip
-                      formatter={(value) => [`${value}%`, 'Completion Rate']}
-                      labelFormatter={(label) => `Day: ${label}`}
+                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke={darkMode ? '#9CA3AF' : '#6B7280'}
+                      style={{ fontSize: '12px' }}
                     />
+                    <YAxis 
+                      domain={[0, 100]} 
+                      stroke={darkMode ? '#9CA3AF' : '#6B7280'}
+                      style={{ fontSize: '12px' }}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
                     <Line
                       type="monotone"
                       dataKey="percentage"
-                      stroke="#6366F1"
+                      stroke={darkMode ? DARK_COLORS.primary : '#6366F1'}
                       strokeWidth={3}
-                      dot={{ fill: '#6366F1', strokeWidth: 2, r: 6 }}
+                      dot={{ fill: darkMode ? DARK_COLORS.primary : '#6366F1', strokeWidth: 2, r: 6 }}
                       activeDot={{ r: 8 }}
                     />
                   </LineChart>
@@ -300,97 +394,178 @@ const EnhancedReports = ({ user, weeklyData, allUsersProgress }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white p-4 rounded-lg border">
-                <div className="text-lg font-bold text-indigo-600">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              <div className={`p-4 rounded-lg border ${
+                darkMode ? 'bg-gray-900/50 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
+                <div className={`text-lg font-bold ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
                   {Math.round(weeklyData.reduce((sum, d) => sum + d.percentage, 0) / weeklyData.length)}%
                 </div>
-                <div className="text-sm text-gray-600">Weekly Average</div>
+                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Weekly Average
+                </div>
               </div>
-              <div className="bg-white p-4 rounded-lg border">
-                <div className="text-lg font-bold text-green-600">{Math.max(...weeklyData.map(d => d.percentage))}%</div>
-                <div className="text-sm text-gray-600">Best Day</div>
+              <div className={`p-4 rounded-lg border ${
+                darkMode ? 'bg-gray-900/50 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
+                <div className={`text-lg font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                  {Math.max(...weeklyData.map(d => d.percentage))}%
+                </div>
+                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Best Day
+                </div>
               </div>
-              <div className="bg-white p-4 rounded-lg border">
-                <div className="text-lg font-bold text-orange-600">{basicStats.totalTasksWeek}</div>
-                <div className="text-sm text-gray-600">Total Tasks</div>
+              <div className={`p-4 rounded-lg border ${
+                darkMode ? 'bg-gray-900/50 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
+                <div className={`text-lg font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                  {basicStats.totalTasksWeek}
+                </div>
+                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Total Tasks
+                </div>
               </div>
-              <div className="bg-white p-4 rounded-lg border">
-                <div className="text-lg font-bold text-purple-600">{weeklyData.filter(d => d.percentage >= 70).length}</div>
-                <div className="text-sm text-gray-600">Good Days</div>
+              <div className={`p-4 rounded-lg border ${
+                darkMode ? 'bg-gray-900/50 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
+                <div className={`text-lg font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                  {weeklyData.filter(d => d.percentage >= 70).length}
+                </div>
+                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Good Days
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Monthly Tracker */}
         {selectedReport === 'monthly' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <CalendarDays className="h-6 w-6 text-indigo-500 mr-2" />
-              📅 Monthly Tracker (Last 30 Days)
+            <h2 className={`text-xl sm:text-2xl font-bold mb-6 flex items-center ${
+              darkMode ? 'text-white' : 'text-gray-900'
+            }`}>
+              <CalendarDays className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-500 mr-2" />
+              📅 Monthly Tracker
             </h2>
 
             {loading ? (
               <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading monthly data...</p>
+                <div className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4 ${
+                  darkMode ? 'border-indigo-400' : 'border-indigo-600'
+                }`}></div>
+                <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                  Loading monthly data...
+                </p>
               </div>
             ) : monthlyData.length === 0 ? (
               <div className="text-center py-12">
-                <CalendarDays className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-4">Loading monthly analytics...</p>
+                <CalendarDays className={`h-16 w-16 mx-auto mb-4 ${
+                  darkMode ? 'text-gray-600' : 'text-gray-400'
+                }`} />
+                <p className={`mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Loading monthly analytics...
+                </p>
                 <button
                   onClick={loadMonthlyData}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    darkMode 
+                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  }`}
                 >
                   Load Data
                 </button>
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 text-center">
-                    <div className="text-xl font-bold text-indigo-600">{basicStats.monthlyAverage}%</div>
-                    <div className="text-xs text-indigo-700">Monthly Average</div>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
+                  <div className={`rounded-lg p-4 text-center ${
+                    darkMode 
+                      ? 'bg-indigo-900/30 border border-indigo-700/50'
+                      : 'bg-indigo-50'
+                  }`}>
+                    <div className={`text-xl font-bold ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                      {basicStats.monthlyAverage}%
+                    </div>
+                    <div className={`text-xs ${darkMode ? 'text-indigo-300/80' : 'text-indigo-700'}`}>
+                      Monthly Average
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 text-center">
-                    <div className="text-xl font-bold text-green-600">{basicStats.totalTasksMonth}</div>
-                    <div className="text-xs text-green-700">Tasks Completed</div>
+                  <div className={`rounded-lg p-4 text-center ${
+                    darkMode 
+                      ? 'bg-green-900/30 border border-green-700/50'
+                      : 'bg-green-50'
+                  }`}>
+                    <div className={`text-xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                      {basicStats.totalTasksMonth}
+                    </div>
+                    <div className={`text-xs ${darkMode ? 'text-green-300/80' : 'text-green-700'}`}>
+                      Tasks Completed
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg p-4 text-center">
-                    <div className="text-xl font-bold text-yellow-600">{basicStats.perfectDays}</div>
-                    <div className="text-xs text-yellow-700">Perfect Days</div>
+                  <div className={`rounded-lg p-4 text-center ${
+                    darkMode 
+                      ? 'bg-yellow-900/30 border border-yellow-700/50'
+                      : 'bg-yellow-50'
+                  }`}>
+                    <div className={`text-xl font-bold ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
+                      {basicStats.perfectDays}
+                    </div>
+                    <div className={`text-xs ${darkMode ? 'text-yellow-300/80' : 'text-yellow-700'}`}>
+                      Perfect Days
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4 text-center">
-                    <div className="text-xl font-bold text-orange-600">{basicStats.bestStreak}</div>
-                    <div className="text-xs text-orange-700">Best Streak</div>
+                  <div className={`rounded-lg p-4 text-center ${
+                    darkMode 
+                      ? 'bg-orange-900/30 border border-orange-700/50'
+                      : 'bg-orange-50'
+                  }`}>
+                    <div className={`text-xl font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                      {basicStats.bestStreak}
+                    </div>
+                    <div className={`text-xs ${darkMode ? 'text-orange-300/80' : 'text-orange-700'}`}>
+                      Best Streak
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 text-center">
-                    <div className="text-xl font-bold text-purple-600">
+                  <div className={`rounded-lg p-4 text-center ${
+                    darkMode 
+                      ? 'bg-purple-900/30 border border-purple-700/50'
+                      : 'bg-purple-50'
+                  }`}>
+                    <div className={`text-xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
                       {monthlyData.filter(d => d.percentage >= 80).length}
                     </div>
-                    <div className="text-xs text-purple-700">Excellent Days</div>
+                    <div className={`text-xs ${darkMode ? 'text-purple-300/80' : 'text-purple-700'}`}>
+                      Excellent Days
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="text-lg font-medium mb-4">30-Day Trend</h3>
-                  <div className="h-80">
+                <div className={`rounded-lg p-4 ${darkMode ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
+                  <h3 className={`text-lg font-medium mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    30-Day Trend
+                  </h3>
+                  <div className="h-64 sm:h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={monthlyData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis domain={[0, 100]} />
-                        <Tooltip
-                          formatter={(value) => [`${value}%`, 'Completion']}
+                        <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                        <XAxis 
+                          dataKey="date" 
+                          stroke={darkMode ? '#9CA3AF' : '#6B7280'}
+                          style={{ fontSize: '10px' }}
                         />
+                        <YAxis 
+                          domain={[0, 100]} 
+                          stroke={darkMode ? '#9CA3AF' : '#6B7280'}
+                          style={{ fontSize: '12px' }}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
                         <Area
                           type="monotone"
                           dataKey="percentage"
-                          stroke="#6366F1"
-                          fill="#6366F1"
-                          fillOpacity={0.2}
+                          stroke={darkMode ? DARK_COLORS.primary : '#6366F1'}
+                          fill={darkMode ? DARK_COLORS.primary : '#6366F1'}
+                          fillOpacity={darkMode ? 0.3 : 0.2}
                           strokeWidth={2}
                         />
                       </AreaChart>
@@ -399,16 +574,30 @@ const EnhancedReports = ({ user, weeklyData, allUsersProgress }) => {
                 </div>
 
                 {dayOfWeekData.length > 0 && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h3 className="text-lg font-medium mb-4">Performance by Day of Week</h3>
+                  <div className={`rounded-lg p-4 ${darkMode ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
+                    <h3 className={`text-lg font-medium mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Performance by Day
+                    </h3>
                     <div className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={dayOfWeekData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="day" />
-                          <YAxis domain={[0, 100]} />
-                          <Tooltip formatter={(value) => [`${value}%`, 'Avg Completion']} />
-                          <Bar dataKey="avgPercentage" fill="#8B5CF6" />
+                          <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                          <XAxis 
+                            dataKey="day" 
+                            stroke={darkMode ? '#9CA3AF' : '#6B7280'}
+                            style={{ fontSize: '12px' }}
+                          />
+                          <YAxis 
+                            domain={[0, 100]} 
+                            stroke={darkMode ? '#9CA3AF' : '#6B7280'}
+                            style={{ fontSize: '12px' }}
+                          />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Bar 
+                            dataKey="avgPercentage" 
+                            fill={darkMode ? DARK_COLORS.purple : '#8B5CF6'} 
+                            radius={[8, 8, 0, 0]}
+                          />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -419,17 +608,20 @@ const EnhancedReports = ({ user, weeklyData, allUsersProgress }) => {
           </div>
         )}
 
-        {/* Category Analysis */}
         {selectedReport === 'category' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <Award className="h-6 w-6 text-indigo-500 mr-2" />
+            <h2 className={`text-xl sm:text-2xl font-bold mb-6 flex items-center ${
+              darkMode ? 'text-white' : 'text-gray-900'
+            }`}>
+              <Award className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-500 mr-2" />
               📋 Category Performance
             </h2>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-lg font-medium mb-4">Today's Completion</h3>
+              <div className={`rounded-lg p-4 ${darkMode ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
+                <h3 className={`text-lg font-medium mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  Today's Completion
+                </h3>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -441,29 +633,44 @@ const EnhancedReports = ({ user, weeklyData, allUsersProgress }) => {
                         fill="#8884d8"
                         dataKey="completionRate"
                         label={({name, completionRate}) => `${name}: ${completionRate}%`}
+                        labelStyle={{ 
+                          fill: darkMode ? '#E5E7EB' : '#1F2937',
+                          fontSize: '12px',
+                          fontWeight: '500'
+                        }}
                       >
                         {categoryData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip content={<CustomTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <h3 className="text-lg font-medium">Detailed Breakdown</h3>
+                <h3 className={`text-lg font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  Detailed Breakdown
+                </h3>
                 {categoryData.map((category, index) => (
-                  <div key={index} className="bg-white rounded-lg p-4 border">
+                  <div key={index} className={`rounded-lg p-4 border ${
+                    darkMode ? 'bg-gray-900/50 border-gray-700' : 'bg-white border-gray-200'
+                  }`}>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">
                         <span className="text-xl">{category.icon}</span>
-                        <span className="font-medium text-gray-900">{category.fullName}</span>
+                        <span className={`font-medium text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {category.fullName}
+                        </span>
                       </div>
-                      <span className="font-bold text-indigo-600">{category.completionRate}%</span>
+                      <span className={`font-bold ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                        {category.completionRate}%
+                      </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className={`w-full rounded-full h-2 ${
+                      darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                    }`}>
                       <div
                         className="h-2 rounded-full transition-all duration-500"
                         style={{ 
@@ -479,42 +686,71 @@ const EnhancedReports = ({ user, weeklyData, allUsersProgress }) => {
           </div>
         )}
 
-        {/* Team Performance */}
         {selectedReport === 'team' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <Users className="h-6 w-6 text-indigo-500 mr-2" />
+            <h2 className={`text-xl sm:text-2xl font-bold mb-6 flex items-center ${
+              darkMode ? 'text-white' : 'text-gray-900'
+            }`}>
+              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-500 mr-2" />
               👥 Team Performance
             </h2>
             
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="h-80">
+            <div className={`rounded-lg p-4 ${darkMode ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
+              <div className="h-64 sm:h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={allUsersProgress}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="user.name" />
-                    <YAxis domain={[0, 100]} />
-                    <Tooltip formatter={(value) => [`${value}%`, 'Completion Rate']} />
-                    <Bar dataKey="percentage" fill="#10B981" />
+                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                    <XAxis 
+                      dataKey="user.name" 
+                      stroke={darkMode ? '#9CA3AF' : '#6B7280'}
+                      style={{ fontSize: '12px' }}
+                    />
+                    <YAxis 
+                      domain={[0, 100]} 
+                      stroke={darkMode ? '#9CA3AF' : '#6B7280'}
+                      style={{ fontSize: '12px' }}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar 
+                      dataKey="percentage" 
+                      fill={darkMode ? DARK_COLORS.success : '#10B981'}
+                      radius={[8, 8, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white p-4 rounded-lg border text-center">
-                <div className="text-xl font-bold text-green-600">{avgTeamPerformance}%</div>
-                <div className="text-sm text-gray-600">Team Average</div>
+              <div className={`p-4 rounded-lg border text-center ${
+                darkMode ? 'bg-gray-900/50 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
+                <div className={`text-xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                  {avgTeamPerformance}%
+                </div>
+                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Team Average
+                </div>
               </div>
-              <div className="bg-white p-4 rounded-lg border text-center">
-                <div className="text-xl font-bold text-blue-600">{allUsersProgress.length}</div>
-                <div className="text-sm text-gray-600">Active Members</div>
+              <div className={`p-4 rounded-lg border text-center ${
+                darkMode ? 'bg-gray-900/50 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
+                <div className={`text-xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                  {allUsersProgress.length}
+                </div>
+                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Active Members
+                </div>
               </div>
-              <div className="bg-white p-4 rounded-lg border text-center">
-                <div className="text-xl font-bold text-purple-600">
+              <div className={`p-4 rounded-lg border text-center ${
+                darkMode ? 'bg-gray-900/50 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
+                <div className={`text-xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
                   {allUsersProgress.filter(u => u.percentage >= 80).length}
                 </div>
-                <div className="text-sm text-gray-600">Top Performers</div>
+                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Top Performers
+                </div>
               </div>
             </div>
           </div>
