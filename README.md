@@ -1,6 +1,6 @@
 # Task Tracker Taqaddum (تقدّم) (React + Supabase)
 
-A collaborative task tracking app with global team progress visualization.
+The first version is complete. The app is totally functional. This was not meant to be a "Just for show" type of project. I don't even like Javascript. But our likings mean nothing when our deed or work is faulty. This is a acknowdedgement that, We are a not good humans. And it's not okay to be okay with this version. We gotta change. Be the best possible version of ourselves. And it is not even a good deed. It is a basic responsibility. 
 
 ## 🚀 Author
 mehedyk
