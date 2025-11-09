@@ -963,10 +963,10 @@ export default function App() {
               
               <div className="lg:absolute bottom-12 left-8 text-center lg:text-left mt-4 lg:mt-0">
                 <h1 className="text-white text-3xl lg:text-5xl font-bold mb-2">
-                  {isLogin ? 'Welcome Back!' : 'Welcome!'}
+                  {isLogin ? 'Welcome Back, Bhai!' : 'Welcome, Bhai!'}
                 </h1>
                 <p className="text-gray-300 text-base lg:text-lg">
-                  {isLogin ? 'Sign in to continue' : 'Create your account'}
+                  {isLogin ? 'নামে নাকি কাজে!?' : 'Create your account'}
                 </p>
               </div>
             </div>
