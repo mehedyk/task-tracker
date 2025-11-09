@@ -646,8 +646,8 @@ export default function App() {
           <div className={`space-y-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
             <p className="text-lg leading-relaxed">
               <strong className="text-indigo-600">Taqaddum</strong> means <em>"Progress"</em> in Arabic. 
-              This project was born from a simple need: to track daily Islamic practices, academic goals, 
-              and personal development in one unified platform.
+              This project was born from a simple need: to track daily natural practices, academic goals, 
+              and personal development in one unified platform. In one word, being a better Muslim is the promise we made to our Creator.
             </p>
             
             <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-indigo-50'}`}>
@@ -661,29 +661,48 @@ export default function App() {
                 <li>• Learn core Islamic principles daily</li>
                 <li>• Fight addictions & maintain clean lifestyle</li>
                 <li>• See team progress & stay motivated together</li>
+                <li>• Visualize performance reports and charts</li>
               </ul>
             </div>
 
-            <p>
+            {/* <p>
               As a Software Engineering student at <strong>Daffodil International University</strong>, 
               I wanted to combine my faith, studies, and wellness into one trackable system. 
               This isn't just another task app - it's a lifestyle tracker for modern Muslims 
               striving for balance and continuous improvement.
-            </p>
+            </p> */}
 
             <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-green-50'}`}>
               <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 💡 Core Philosophy
               </h3>
               <p className="text-sm italic">
-                "The best of deeds are those done consistently, even if they are small." 
+                "The most beloved of deeds to Allah are the most consistent of them, even if they are small." 
                 <br/>— Prophet Muhammad (PBUH)
+
+                <br>
+                إِنَّ أَحَبَّ الأَعْمَالِ إِلَى اللَّهِ أَدْوَمُهَا وَإِنْ قَلَّ
+
+                Narrated by:
+                Aisha (radhi Allahu anha)
+                Recorded in:
+                1. **Sahih al-Bukhari** – Book of Faith, Hadith 6464  
+                2. **Sahih Muslim** – Book of Travelers’ Prayers, Hadith 783  
+                3. Also in: Sunan an-Nasa’i (No. 5032), Sunan Ibn Majah (No. 1086), Musnad Ahmad, and others.
+
+                This hadith is one of the most frequently quoted by scholars when teaching about the importance of **consistency** (dawam) over intensity in worship. It’s the foundation for advice like:
+                - Pray 2 rak’ahs every night instead of 100 one night and nothing for a month
+                - Give £5 in charity weekly instead of £500 once a year
+                - Read one page of Quran daily instead of finishing it in Ramadan and abandoning it the rest of the year
+
+                May Allah make us among those who are consistent in small deeds until we meet Him.</br>
+                <br>-Ameen</br>
               </p>
             </div>
 
             <p>
-              Built with <span className="text-red-500">❤️</span> using React, Supabase, and Tailwind CSS. 
-              Open source and free for everyone.
+              Built with <span className="text-red-500"></span> using React, Supabase, and Tailwind CSS. 
+              Open source to use and free for everyone.
             </p>
 
             <div className="flex justify-center pt-4">
