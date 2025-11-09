@@ -672,10 +672,7 @@ export default function App() {
               <p className="text-sm italic">
                 "The most beloved of deeds to Allah are the most consistent of them, even if they are small." 
                 <br/>— Prophet Muhammad (PBUH)
-
                 <br>
-                إِنَّ أَحَبَّ الأَعْمَالِ إِلَى اللَّهِ أَدْوَمُهَا وَإِنْ قَلَّ
-
                 Narrated by:
                 Aisha (radhi Allahu anha)
                 Recorded in:
