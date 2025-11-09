@@ -671,17 +671,12 @@ export default function App() {
               </h3>
               <p className="text-sm italic">
                 "The most beloved of deeds to Allah are the most consistent of them, even if they are small." 
-                <br/>— Prophet Muhammad (PBUH)
-                <br>
-                Narrated by:
-                Aisha (radhi Allahu anha)
-                Recorded in:
-                Sahih al-Bukhari – Book of Faith, Hadith 6464</br>
+                <br/>— Prophet Muhammad (PBUH) Bukhari-6464
               </p>
             </div>
 
             <p>
-              Built with <span className="text-red-500"></span> using React, Supabase, and Tailwind CSS. 
+              Built with <span className="text-red-500">Personal Reasons</span> using React, Supabase, and Tailwind CSS.
               Open source to use and free for everyone.
             </p>
 
