@@ -665,13 +665,6 @@ export default function App() {
               </ul>
             </div>
 
-            {/* <p>
-              As a Software Engineering student at <strong>Daffodil International University</strong>, 
-              I wanted to combine my faith, studies, and wellness into one trackable system. 
-              This isn't just another task app - it's a lifestyle tracker for modern Muslims 
-              striving for balance and continuous improvement.
-            </p> */}
-
             <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-green-50'}`}>
               <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 💡 Core Philosophy
@@ -686,17 +679,7 @@ export default function App() {
                 Narrated by:
                 Aisha (radhi Allahu anha)
                 Recorded in:
-                1. **Sahih al-Bukhari** – Book of Faith, Hadith 6464  
-                2. **Sahih Muslim** – Book of Travelers’ Prayers, Hadith 783  
-                3. Also in: Sunan an-Nasa’i (No. 5032), Sunan Ibn Majah (No. 1086), Musnad Ahmad, and others.
-
-                This hadith is one of the most frequently quoted by scholars when teaching about the importance of **consistency** (dawam) over intensity in worship. It’s the foundation for advice like:
-                - Pray 2 rak’ahs every night instead of 100 one night and nothing for a month
-                - Give £5 in charity weekly instead of £500 once a year
-                - Read one page of Quran daily instead of finishing it in Ramadan and abandoning it the rest of the year
-
-                May Allah make us among those who are consistent in small deeds until we meet Him.</br>
-                <br>-Ameen</br>
+                Sahih al-Bukhari – Book of Faith, Hadith 6464</br>
               </p>
             </div>
 
