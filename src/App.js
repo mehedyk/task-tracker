@@ -4,6 +4,9 @@ import { supabase } from './supabase';
 import { taskTemplates } from './config/taskTemplates';
 import EnhancedTaskList from './components/EnhancedTaskList';
 import EnhancedReports from './components/EnhancedReports';
+import CustomTasksManager from './components/CustomTasksManager';
+import CustomTasksReports from './components/CustomTasksReports';
+import { Activity } from 'lucide-react';
 import {
   User,
   CheckCircle,
@@ -1227,8 +1230,10 @@ export default function App() {
           <nav className="flex flex-wrap gap-2 mb-8">
             {[
               { id: 'dashboard', label: 'My Tasks', icon: CheckCircle }, 
+              { id: 'custom', label: 'Custom Tasks', icon: Target }, // NEW
               { id: 'group', label: 'Team Progress', icon: Users }, 
-              { id: 'reports', label: 'Reports', icon: BarChart3 }
+              { id: 'reports', label: 'Reports', icon: BarChart3 },
+              { id: 'custom-reports', label: 'Custom Reports', icon: Activity } // NEW
             ].map(({ id, label, icon: Icon }) => (
               <button 
                 key={id} 
@@ -1474,6 +1479,24 @@ export default function App() {
                 user={user}
                 weeklyData={weeklyData}
                 allUsersProgress={allUsersProgress}
+                darkMode={darkMode}
+              />
+            </div>
+          )}
+
+          {currentPage === 'custom' && (
+            <div className="animate-fadeIn">
+              <CustomTasksManager 
+                user={user}
+                darkMode={darkMode}
+              />
+            </div>
+          )}
+
+          {currentPage === 'custom-reports' && (
+            <div className="animate-fadeIn">
+              <CustomTasksReports 
+                user={user}
                 darkMode={darkMode}
               />
             </div>
