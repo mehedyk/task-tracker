@@ -1,8 +1,8 @@
 // src/components/CustomTasksManager.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Plus, X, Edit2, Trash2, CheckCircle, Circle, 
-  Calendar, Target, Sparkles, Save, AlertCircle 
+  Target, Sparkles, Save
 } from 'lucide-react';
 import { supabase } from '../supabase';
 
@@ -22,13 +22,7 @@ const CustomTasksManager = ({ user, darkMode }) => {
     '💡', '⚡', '🔥', '✨', '🌟', '🚀', '💪', '🧘'
   ];
 
-  useEffect(() => {
-    if (user) {
-      loadCustomTasks();
-    }
-  }, [user]);
-
-  const loadCustomTasks = async () => {
+  const loadCustomTasks = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -46,7 +40,13 @@ const CustomTasksManager = ({ user, darkMode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, today]);
+
+  useEffect(() => {
+    if (user) {
+      loadCustomTasks();
+    }
+  }, [user, loadCustomTasks]);
 
   const handleAddTask = async () => {
     if (!newTaskName.trim()) {
@@ -113,7 +113,8 @@ const CustomTasksManager = ({ user, darkMode }) => {
     }
   };
 
-  const handleDeleteTask = async (taskId) => {
+  const handleDeleteTask = async (taskId, e) => {
+    e.stopPropagation(); // Prevent triggering toggle
     if (!window.confirm('Are you sure you want to delete this task?')) return;
 
     try {
@@ -155,7 +156,8 @@ const CustomTasksManager = ({ user, darkMode }) => {
     }
   };
 
-  const openEditModal = (task) => {
+  const openEditModal = (task, e) => {
+    e.stopPropagation(); // Prevent triggering toggle
     setEditingTask(task);
     setNewTaskName(task.task_name);
     setNewTaskIcon(task.icon);
@@ -310,7 +312,8 @@ const CustomTasksManager = ({ user, darkMode }) => {
             {customTasks.map((task, index) => (
               <div
                 key={task.id}
-                className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-300 animate-fadeIn ${
+                onClick={() => handleToggleComplete(task.id, task.completed)}
+                className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-300 animate-fadeIn cursor-pointer ${
                   task.completed
                     ? darkMode
                       ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700'
@@ -321,51 +324,58 @@ const CustomTasksManager = ({ user, darkMode }) => {
                 }`}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <div className="flex items-center space-x-4 flex-1 min-w-0">
-                  <button
-                    onClick={() => handleToggleComplete(task.id, task.completed)}
-                    className="flex-shrink-0 transition-all duration-300 transform hover:scale-110"
-                  >
+                {/* Left side - Checkbox, Icon, and Task Name */}
+                <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                  <div className="flex-shrink-0">
                     {task.completed ? (
                       <CheckCircle className="h-6 w-6 text-green-500 animate-pulse" />
                     ) : (
                       <Circle className={`h-6 w-6 ${
-                        darkMode ? 'text-gray-500 hover:text-green-400' : 'text-gray-400 hover:text-green-500'
+                        darkMode ? 'text-gray-500' : 'text-gray-400'
                       }`} />
                     )}
-                  </button>
+                  </div>
                   
-                  <span className="text-3xl flex-shrink-0">{task.icon}</span>
+                  <span className="text-2xl sm:text-3xl flex-shrink-0">{task.icon}</span>
                   
-                  <span className={`font-medium flex-1 min-w-0 truncate ${
+                  {/* FIXED: Text wrapping with word-break */}
+                  <span className={`font-medium flex-1 min-w-0 break-words ${
                     task.completed
                       ? 'text-green-700 line-through'
                       : darkMode
                       ? 'text-white'
                       : 'text-gray-900'
-                  }`}>
+                  }`}
+                    style={{ 
+                      wordBreak: 'break-word',
+                      overflowWrap: 'anywhere'
+                    }}
+                  >
                     {task.task_name}
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
+                {/* Right side - Action Buttons */}
+                <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0 ml-2 sm:ml-4">
                   <button
-                    onClick={() => openEditModal(task)}
+                    onClick={(e) => openEditModal(task, e)}
                     className={`p-2 rounded-lg transition-all duration-200 ${
                       darkMode
                         ? 'text-gray-400 hover:text-blue-400 hover:bg-blue-900/30'
                         : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
                     }`}
+                    aria-label="Edit task"
                   >
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDeleteTask(task.id)}
+                    onClick={(e) => handleDeleteTask(task.id, e)}
                     className={`p-2 rounded-lg transition-all duration-200 ${
                       darkMode
                         ? 'text-gray-400 hover:text-red-400 hover:bg-red-900/30'
                         : 'text-gray-600 hover:text-red-600 hover:bg-red-50'
                     }`}
+                    aria-label="Delete task"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -427,6 +437,7 @@ const CustomTasksManager = ({ user, darkMode }) => {
                     <button
                       key={icon}
                       onClick={() => setNewTaskIcon(icon)}
+                      type="button"
                       className={`p-3 text-2xl rounded-lg transition-all duration-200 transform hover:scale-110 ${
                         newTaskIcon === icon
                           ? darkMode
