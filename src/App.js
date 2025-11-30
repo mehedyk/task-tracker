@@ -6,6 +6,7 @@ import EnhancedTaskList from './components/EnhancedTaskList';
 import EnhancedReports from './components/EnhancedReports';
 import CustomTasksManager from './components/CustomTasksManager';
 import CustomTasksReports from './components/CustomTasksReports';
+import CustomTasksTeamReports from './components/CustomTasksTeamReports';
 import { Activity } from 'lucide-react';
 import {
   User,
@@ -1230,10 +1231,11 @@ export default function App() {
           <nav className="flex flex-wrap gap-2 mb-8">
             {[
               { id: 'dashboard', label: 'My Tasks', icon: CheckCircle }, 
-              { id: 'custom', label: 'Custom Tasks', icon: Target }, // NEW
+              { id: 'custom', label: 'Custom Tasks', icon: Target },
               { id: 'group', label: 'Team Progress', icon: Users }, 
               { id: 'reports', label: 'Reports', icon: BarChart3 },
-              { id: 'custom-reports', label: 'Custom Reports', icon: Activity } // NEW
+              { id: 'custom-reports', label: 'Custom Reports', icon: Activity },
+              { id: 'custom-team', label: 'Custom Team Reports', icon: Users }
             ].map(({ id, label, icon: Icon }) => (
               <button 
                 key={id} 
@@ -1501,6 +1503,16 @@ export default function App() {
               />
             </div>
           )}
+
+          {currentPage === 'custom-team' && ( // ADD THIS SECTION
+            <div className="animate-fadeIn">
+              <CustomTasksTeamReports 
+                user={user}
+                darkMode={darkMode}
+              />
+            </div>
+          )}
+          
         </div>
       </div>
       

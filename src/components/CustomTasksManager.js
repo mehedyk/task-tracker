@@ -2,17 +2,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Plus, X, Edit2, Trash2, CheckCircle, Circle, 
-  Target, Sparkles, Save
+  Target, Sparkles, Save, Copy
 } from 'lucide-react';
 import { supabase } from '../supabase';
 
 const CustomTasksManager = ({ user, darkMode }) => {
   const [customTasks, setCustomTasks] = useState([]);
+  const [taskTemplates, setTaskTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskIcon, setNewTaskIcon] = useState('📝');
+  const [isSaveAsTemplate, setIsSaveAsTemplate] = useState(false);
   const [message, setMessage] = useState(null);
 
   const today = new Date().toISOString().split('T')[0];
@@ -22,9 +24,72 @@ const CustomTasksManager = ({ user, darkMode }) => {
     '💡', '⚡', '🔥', '✨', '🌟', '🚀', '💪', '🧘'
   ];
 
+  // Load task templates (saved tasks that repeat daily)
+  const loadTaskTemplates = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('custom_task_templates')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setTaskTemplates(data || []);
+      return data || [];
+    } catch (error) {
+      console.error('Error loading task templates:', error);
+      return [];
+    }
+  }, [user]);
+
+  // Create today's tasks from templates
+  const createTodayTasksFromTemplates = useCallback(async (templates) => {
+    try {
+      // Check if tasks already exist for today
+      const { data: existingTasks } = await supabase
+        .from('custom_tasks')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .limit(1);
+
+      // If tasks exist, don't create new ones
+      if (existingTasks && existingTasks.length > 0) {
+        return;
+      }
+
+      // Create tasks from templates
+      const tasksToCreate = templates.map(template => ({
+        user_id: user.id,
+        task_name: template.task_name,
+        icon: template.icon,
+        date: today,
+        completed: false,
+        template_id: template.id
+      }));
+
+      if (tasksToCreate.length > 0) {
+        const { error } = await supabase
+          .from('custom_tasks')
+          .insert(tasksToCreate);
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Error creating today tasks:', error);
+    }
+  }, [user, today]);
+
   const loadCustomTasks = useCallback(async () => {
     setLoading(true);
     try {
+      // Load templates first
+      const templates = await loadTaskTemplates();
+      
+      // Create today's tasks from templates if needed
+      await createTodayTasksFromTemplates(templates);
+
+      // Load today's tasks
       const { data, error } = await supabase
         .from('custom_tasks')
         .select('*')
@@ -40,7 +105,7 @@ const CustomTasksManager = ({ user, darkMode }) => {
     } finally {
       setLoading(false);
     }
-  }, [user, today]);
+  }, [user, today, loadTaskTemplates, createTodayTasksFromTemplates]);
 
   useEffect(() => {
     if (user) {
@@ -55,6 +120,27 @@ const CustomTasksManager = ({ user, darkMode }) => {
     }
 
     try {
+      let templateId = null;
+
+      // If saving as template, create template first
+      if (isSaveAsTemplate) {
+        const { data: templateData, error: templateError } = await supabase
+          .from('custom_task_templates')
+          .insert([{
+            user_id: user.id,
+            task_name: newTaskName.trim(),
+            icon: newTaskIcon
+          }])
+          .select();
+
+        if (templateError) throw templateError;
+        templateId = templateData[0].id;
+        
+        // Reload templates
+        await loadTaskTemplates();
+      }
+
+      // Create today's task
       const { data, error } = await supabase
         .from('custom_tasks')
         .insert([{
@@ -62,7 +148,8 @@ const CustomTasksManager = ({ user, darkMode }) => {
           task_name: newTaskName.trim(),
           icon: newTaskIcon,
           date: today,
-          completed: false
+          completed: false,
+          template_id: templateId
         }])
         .select();
 
@@ -71,8 +158,14 @@ const CustomTasksManager = ({ user, darkMode }) => {
       setCustomTasks([...customTasks, data[0]]);
       setNewTaskName('');
       setNewTaskIcon('📝');
+      setIsSaveAsTemplate(false);
       setShowAddModal(false);
-      setMessage({ type: 'success', text: '✅ Task added successfully!' });
+      setMessage({ 
+        type: 'success', 
+        text: isSaveAsTemplate 
+          ? '✅ Task added and saved as daily template!' 
+          : '✅ Task added successfully!' 
+      });
     } catch (error) {
       console.error('Error adding task:', error);
       setMessage({ type: 'error', text: '⚠️ Could not add task' });
@@ -114,8 +207,8 @@ const CustomTasksManager = ({ user, darkMode }) => {
   };
 
   const handleDeleteTask = async (taskId, e) => {
-    e.stopPropagation(); // Prevent triggering toggle
-    if (!window.confirm('Are you sure you want to delete this task?')) return;
+    e.stopPropagation();
+    if (!window.confirm('Delete this task for today only?')) return;
 
     try {
       const { error } = await supabase
@@ -126,10 +219,38 @@ const CustomTasksManager = ({ user, darkMode }) => {
       if (error) throw error;
 
       setCustomTasks(customTasks.filter(task => task.id !== taskId));
-      setMessage({ type: 'success', text: '✅ Task deleted successfully!' });
+      setMessage({ type: 'success', text: '✅ Task deleted for today!' });
     } catch (error) {
       console.error('Error deleting task:', error);
       setMessage({ type: 'error', text: '⚠️ Could not delete task' });
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId) => {
+    if (!window.confirm('Delete this task permanently? It will stop appearing daily.')) return;
+
+    try {
+      const { error } = await supabase
+        .from('custom_task_templates')
+        .delete()
+        .eq('id', templateId);
+
+      if (error) throw error;
+
+      // Remove today's task if it's from this template
+      const taskToRemove = customTasks.find(t => t.template_id === templateId);
+      if (taskToRemove) {
+        await supabase
+          .from('custom_tasks')
+          .delete()
+          .eq('id', taskToRemove.id);
+      }
+
+      await loadCustomTasks();
+      setMessage({ type: 'success', text: '✅ Template deleted permanently!' });
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      setMessage({ type: 'error', text: '⚠️ Could not delete template' });
     }
   };
 
@@ -157,7 +278,7 @@ const CustomTasksManager = ({ user, darkMode }) => {
   };
 
   const openEditModal = (task, e) => {
-    e.stopPropagation(); // Prevent triggering toggle
+    e.stopPropagation();
     setEditingTask(task);
     setNewTaskName(task.task_name);
     setNewTaskIcon(task.icon);
@@ -169,6 +290,7 @@ const CustomTasksManager = ({ user, darkMode }) => {
     setEditingTask(null);
     setNewTaskName('');
     setNewTaskIcon('📝');
+    setIsSaveAsTemplate(false);
   };
 
   const completedCount = customTasks.filter(t => t.completed).length;
@@ -188,7 +310,7 @@ const CustomTasksManager = ({ user, darkMode }) => {
               My Custom Tasks
             </h2>
             <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              Personal tasks that only you can see
+              Personal tasks that only you can see • Today: {new Date().toLocaleDateString()}
             </p>
           </div>
           <button
@@ -250,6 +372,20 @@ const CustomTasksManager = ({ user, darkMode }) => {
                 style={{ width: `${completionRate}%` }}
               />
             </div>
+          </div>
+        )}
+
+        {/* Daily Templates Info */}
+        {taskTemplates.length > 0 && (
+          <div className={`mt-4 p-3 rounded-lg border-l-4 ${
+            darkMode 
+              ? 'bg-blue-900/20 border-blue-500'
+              : 'bg-blue-50 border-blue-500'
+          }`}>
+            <p className={`text-sm ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+              <Copy className="h-4 w-4 inline mr-1" />
+              You have {taskTemplates.length} daily recurring task{taskTemplates.length > 1 ? 's' : ''} that will appear every day
+            </p>
           </div>
         )}
       </div>
@@ -324,7 +460,6 @@ const CustomTasksManager = ({ user, darkMode }) => {
                 }`}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                {/* Left side - Checkbox, Icon, and Task Name */}
                 <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                   <div className="flex-shrink-0">
                     {task.completed ? (
@@ -338,24 +473,30 @@ const CustomTasksManager = ({ user, darkMode }) => {
                   
                   <span className="text-2xl sm:text-3xl flex-shrink-0">{task.icon}</span>
                   
-                  {/* FIXED: Text wrapping with word-break */}
-                  <span className={`font-medium flex-1 min-w-0 break-words ${
-                    task.completed
-                      ? 'text-green-700 line-through'
-                      : darkMode
-                      ? 'text-white'
-                      : 'text-gray-900'
-                  }`}
-                    style={{ 
-                      wordBreak: 'break-word',
-                      overflowWrap: 'anywhere'
-                    }}
-                  >
-                    {task.task_name}
-                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span className={`font-medium block break-words ${
+                      task.completed
+                        ? 'text-green-700 line-through'
+                        : darkMode
+                        ? 'text-white'
+                        : 'text-gray-900'
+                    }`}
+                      style={{ 
+                        wordBreak: 'break-word',
+                        overflowWrap: 'anywhere'
+                      }}
+                    >
+                      {task.task_name}
+                    </span>
+                    {task.template_id && (
+                      <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                        <Copy className="h-3 w-3 inline mr-1" />
+                        Daily recurring
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Right side - Action Buttons */}
                 <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0 ml-2 sm:ml-4">
                   <button
                     onClick={(e) => openEditModal(task, e)}
@@ -369,7 +510,14 @@ const CustomTasksManager = ({ user, darkMode }) => {
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={(e) => handleDeleteTask(task.id, e)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (task.template_id) {
+                        handleDeleteTemplate(task.template_id);
+                      } else {
+                        handleDeleteTask(task.id, e);
+                      }
+                    }}
                     className={`p-2 rounded-lg transition-all duration-200 ${
                       darkMode
                         ? 'text-gray-400 hover:text-red-400 hover:bg-red-900/30'
@@ -453,6 +601,34 @@ const CustomTasksManager = ({ user, darkMode }) => {
                   ))}
                 </div>
               </div>
+
+              {!editingTask && (
+                <div className={`p-4 rounded-lg border ${
+                  darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <label className="flex items-start space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isSaveAsTemplate}
+                      onChange={(e) => setIsSaveAsTemplate(e.target.checked)}
+                      className="mt-1 h-5 w-5 text-purple-600 rounded focus:ring-purple-500"
+                    />
+                    <div>
+                      <span className={`font-medium block ${
+                        darkMode ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        <Copy className="h-4 w-4 inline mr-1" />
+                        Make this a daily recurring task
+                      </span>
+                      <span className={`text-sm ${
+                        darkMode ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
+                        Task will automatically appear every day
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              )}
 
               <div className="flex space-x-3">
                 <button

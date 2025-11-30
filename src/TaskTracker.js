@@ -283,6 +283,7 @@ const TaskTracker = () => {
             { id: 'dashboard', label: 'My Tasks', icon: CheckCircle },
             { id: 'group', label: 'Team Progress', icon: Users },
             { id: 'reports', label: 'Reports', icon: BarChart3 },
+            { id: 'custom-team', label: 'Custom Team Reports', icon: Users },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
