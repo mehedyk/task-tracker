@@ -1,7 +1,8 @@
 # 🌟 Task Tracker Taqaddum (تقدّم)
 
-<div align="center">
 - **Visit**: [Link](https://task-tracker-taqaddum.vercel.app/)
+
+<div align="center">
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-Proprietary-red.svg)
