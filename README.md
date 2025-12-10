@@ -1493,7 +1493,7 @@ Your duas for:
 ### 👨‍💻 **Author Information**
 
 **S. M. Mehedy Kawser**
-- **Role**: Founder & Lead Developer
+- **Role**: Founder & Lead Developer (Only)
 - **University**: Daffodil International University (DIU)
 - **Major**: Software Engineering
 - **Location**: Dhaka, Bangladesh 🇧🇩
@@ -1501,7 +1501,6 @@ Your duas for:
 
 ### 📱 **Connect With Me**
 
-- **Web View**: [Taqaddum](https://task-tracker-taqaddum.vercel.app/)
 - **GitHub**: [@mehedyk](https://github.com/mehedyk)
 - **Email**: mehedyk@proton.me
 - **LinkedIn**: [Your LinkedIn Profile]
@@ -1593,8 +1592,6 @@ Join the conversation:
 **— Quran 13:11**
 
 ---
-
-### **SubhanAllah, Alhamdulillah, Allahu Akbar**
 
 ---
 
