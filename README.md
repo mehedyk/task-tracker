@@ -1,6 +1,7 @@
 # 🌟 Task Tracker Taqaddum (تقدّم)
-- **Visit**: [Link](https://task-tracker-taqaddum.vercel.app/)
+
 <div align="center">
+- **Visit**: [Link](https://task-tracker-taqaddum.vercel.app/)
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-Proprietary-red.svg)
@@ -12,7 +13,7 @@
 
 **Copyright © 2025 S. M. Mehedy Kawser. All Rights Reserved.**
 
-[Live Demo](#) • [Report Bug](https://github.com/mehedyk/task-tracker-taqaddum/issues) • [Request Feature](https://github.com/mehedyk/task-tracker-taqaddum/issues)
+[Live Demo](https://task-tracker-taqaddum.vercel.app/) • [Report Bug](https://github.com/mehedyk/task-tracker-taqaddum/issues) • [Request Feature](https://github.com/mehedyk/task-tracker-taqaddum/issues)
 
 </div>
 
@@ -45,7 +46,7 @@
 
 ## 🎯 About The Project
 
-**Taqaddum (تقدّم)** means "**Progress**" in Arabic. This project was born from a deeply personal need: to create a unified platform for tracking daily Islamic practices, academic goals, and personal development. 
+[**Taqaddum (تقدّم)**](https://task-tracker-taqaddum.vercel.app/) means "**Progress**" in Arabic. This project was born from a deeply personal need: to create a unified platform for tracking daily Islamic practices, academic goals, and personal development. 
 
 ### The Story Behind Taqaddum
 
