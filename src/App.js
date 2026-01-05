@@ -438,7 +438,7 @@ export default function App() {
               darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-800'
             }`}
           >
-            <span>@mehedyk</span>
+            <span>mehedyk</span>
             <ExternalLink className="h-3 w-3" />
           </a>
           <span>PRODUCT</span>
