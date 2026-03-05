@@ -3,17 +3,131 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    
+
+    <!-- ═══════════════════════════════════════════════════════════
+         BASIC SEO
+         These are the most important tags. Google reads these first.
+    ═══════════════════════════════════════════════════════════ -->
+
+    <title>Taqaddum (تقدّم) — Islamic Lifestyle & Task Tracker</title>
+
+    <!-- The description shown under your link in Google search results.
+         Keep it under 160 characters. Make it clear and compelling. -->
+    <meta name="description" content="Taqaddum means Progress. Track your daily Salah, Islamic habits, fitness, academics, and team accountability — all in one free app built for Muslims." />
+
+    <!-- Keywords: not heavily used by Google anymore, but still good practice -->
+    <meta name="keywords" content="islamic task tracker, muslim productivity app, salah tracker, daily habits islam, taqaddum, muslim accountability, prayer tracker, islamic lifestyle app, bangladesh muslim app" />
+
+    <!-- Who made this -->
+    <meta name="author" content="S. M. Mehedy Kawser" />
+
+    <!-- Tells search engines to index this page and follow its links -->
+    <meta name="robots" content="index, follow" />
+
+    <!-- Canonical URL — tells Google this is the "real" URL to index.
+         Prevents duplicate content issues if people link with or without www. -->
+    <link rel="canonical" href="https://task-tracker-taqaddum.vercel.app/" />
+
+    <!-- ═══════════════════════════════════════════════════════════
+         OPEN GRAPH (Facebook, WhatsApp, LinkedIn previews)
+         When someone shares your link, this controls what the
+         preview card looks like — image, title, description.
+    ═══════════════════════════════════════════════════════════ -->
+
+    <meta property="og:type"        content="website" />
+    <meta property="og:url"         content="https://task-tracker-taqaddum.vercel.app/" />
+    <meta property="og:title"       content="Taqaddum (تقدّم) — Islamic Task Tracker" />
+    <meta property="og:description" content="Track your daily Salah, Islamic habits, fitness, and academic goals. Built by a Muslim, for Muslims. Free and open." />
+    <!-- og:image should be a 1200x630px image hosted publicly.
+         For now pointing to your PWA icon — replace with a real
+         screenshot or banner when you have one. -->
+    <meta property="og:image"       content="https://task-tracker-taqaddum.vercel.app/android-chrome-512x512.png" />
+    <meta property="og:image:width"  content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt"   content="Taqaddum task tracker app logo" />
+    <meta property="og:locale"      content="en_US" />
+    <meta property="og:site_name"   content="Taqaddum" />
+
+    <!-- ═══════════════════════════════════════════════════════════
+         TWITTER / X CARDS
+         Controls how your link looks when shared on Twitter/X.
+         "summary_large_image" shows a big image preview.
+    ═══════════════════════════════════════════════════════════ -->
+
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:site"        content="@MahdiKawser" />
+    <meta name="twitter:creator"     content="@MahdiKawser" />
+    <meta name="twitter:title"       content="Taqaddum (تقدّم) — Islamic Task Tracker" />
+    <meta name="twitter:description" content="Track Salah, habits, fitness, and team accountability. Built for Muslims who want to be consistent, not perfect." />
+    <meta name="twitter:image"       content="https://task-tracker-taqaddum.vercel.app/android-chrome-512x512.png" />
+    <meta name="twitter:image:alt"   content="Taqaddum app" />
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PWA & BROWSER APPEARANCE
+         Controls how the app looks when added to home screen,
+         the browser tab colour, and mobile bar colour.
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Theme colour — the browser UI bar colour on mobile.
+         Changed from purple (#6366f1) to teal to match v3 design. -->
+    <meta name="theme-color" content="#0F766E" />
+
+    <!-- Apple-specific: "web app" mode hides browser chrome when
+         added to iOS home screen -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Taqaddum" />
+
+    <!-- ═══════════════════════════════════════════════════════════
+         STRUCTURED DATA (JSON-LD)
+         This is what gives you "rich results" in Google —
+         star ratings, FAQ boxes, breadcrumbs etc.
+         We're using WebApplication schema so Google understands
+         what kind of product this is.
+    ═══════════════════════════════════════════════════════════ -->
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Taqaddum",
+      "alternateName": "تقدّم",
+      "description": "An Islamic lifestyle and productivity tracker for daily Salah, habits, fitness, academics, and team accountability.",
+      "url": "https://task-tracker-taqaddum.vercel.app/",
+      "applicationCategory": "LifestyleApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "S. M. Mehedy Kawser",
+        "url": "https://mehedy.netlify.app",
+        "sameAs": [
+          "https://github.com/mehedyk",
+          "https://linkedin.com/in/mehedyk"
+        ]
+      },
+      "keywords": "islamic task tracker, salah tracker, muslim productivity, daily habits",
+      "inLanguage": ["en", "ar"],
+      "isAccessibleForFree": true,
+      "screenshot": "https://task-tracker-taqaddum.vercel.app/android-chrome-512x512.png"
+    }
+    </script>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         ICONS & MANIFEST
+         These control the favicon, home screen icon, and PWA.
+    ═══════════════════════════════════════════════════════════ -->
+
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    
-    <meta name="theme-color" content="#6366f1" />
-    <meta name="description" content="Task Tracker Taqaddum - Track your Islamic lifestyle and personal goals" />
-    
-    <title>Task Tracker Taqaddum</title>
+
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
