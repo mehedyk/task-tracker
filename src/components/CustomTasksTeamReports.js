@@ -1,497 +1,439 @@
 // src/components/CustomTasksTeamReports.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, AreaChart, Area
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
+  ResponsiveContainer, BarChart, Bar, AreaChart, Area, Cell
 } from 'recharts';
-import { 
-  Users, Calendar, TrendingUp, CalendarDays, FileText, Trophy
+import {
+  Users, CalendarDays, TrendingUp, Trophy, Star, Award,
+  Activity, BarChart3, CheckCircle, Flame
 } from 'lucide-react';
 import { supabase } from '../supabase';
 
-const CustomTasksTeamReports = ({ user, darkMode }) => {
-  const [selectedView, setSelectedView] = useState('monthly');
-  const [loading, setLoading] = useState(false);
-  const [monthlyData, setMonthlyData] = useState([]);
-  const [yearlyData, setYearlyData] = useState([]);
-  const [allUsers, setAllUsers] = useState([]);
-  const [yearlyStats, setYearlyStats] = useState({});
+// ─── Palette ──────────────────────────────────────────────────────────────────
+const PAL = {
+  light: { teal:'#0F766E', sky:'#0EA5E9', emerald:'#059669', amber:'#D97706', rose:'#E11D48', lime:'#65A30D', cyan:'#0891B2', indigo:'#3B82F6', orange:'#EA580C' },
+  dark:  { teal:'#2DD4BF', sky:'#38BDF8', emerald:'#34D399', amber:'#FCD34D', rose:'#FB7185', lime:'#A3E635', cyan:'#22D3EE', indigo:'#60A5FA', orange:'#FB923C' },
+};
+const LINE_COLORS_LIGHT = ['#0F766E','#0EA5E9','#D97706','#E11D48','#65A30D','#0891B2','#EA580C','#059669'];
+const LINE_COLORS_DARK  = ['#2DD4BF','#38BDF8','#FCD34D','#FB7185','#A3E635','#22D3EE','#FB923C','#34D399'];
 
-  const views = [
-    { id: 'monthly', name: 'Monthly Team View', icon: CalendarDays },
-    { id: 'yearly', name: 'Yearly Team View', icon: Calendar },
-    { id: 'stats', name: 'Yearly Stats', icon: FileText }
+const TT = (dm) => ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className={`px-3 py-2 rounded-xl border shadow-2xl text-sm ${dm ? 'bg-gray-900/95 border-gray-700 text-gray-100' : 'bg-white/95 border-stone-200 text-stone-900'}`}>
+      <p className="font-bold text-xs opacity-50 mb-1 uppercase">{label}</p>
+      {payload.map((e, i) => <p key={i} style={{ color: e.color }} className="font-semibold">{e.name}: {e.value}%</p>)}
+    </div>
+  );
+};
+
+const StatCard = ({ label, value, sub, icon: Icon, color, darkMode }) => (
+  <div className={`rounded-2xl p-4 border transition-all hover:shadow-lg hover:-translate-y-0.5 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-stone-200'}`}>
+    <div className="p-2 rounded-xl inline-block mb-2" style={{ background: color + '22' }}>
+      <Icon className="h-4 w-4" style={{ color }} />
+    </div>
+    <div className="text-2xl font-black" style={{ color, fontFamily: 'Georgia, serif' }}>{value}</div>
+    <div className={`text-xs font-semibold mt-0.5 ${darkMode ? 'text-gray-300' : 'text-stone-700'}`}>{label}</div>
+    {sub && <div className={`text-xs ${darkMode ? 'text-gray-600' : 'text-stone-400'}`}>{sub}</div>}
+  </div>
+);
+
+const Panel = ({ title, icon: Icon, color, darkMode, children }) => (
+  <div className={`rounded-2xl border p-4 sm:p-6 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-stone-200'}`}>
+    {title && (
+      <h3 className={`font-black flex items-center gap-2 mb-4 text-sm sm:text-base ${darkMode ? 'text-white' : 'text-stone-900'}`}
+        style={{ fontFamily: 'Georgia, serif' }}>
+        {Icon && <Icon className="h-4 w-4 sm:h-5 sm:w-5" style={{ color }} />}
+        {title}
+      </h3>
+    )}
+    {children}
+  </div>
+);
+
+// ─── Component ────────────────────────────────────────────────────────────────
+const CustomTasksTeamReports = ({ user, darkMode }) => {
+  const [tab, setTab]               = useState('monthly');
+  const [loading, setLoading]       = useState(false);
+  const [allUsers, setAllUsers]     = useState([]);
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [yearlyStats, setYearlyStats] = useState({});
+  const [yearlyLoaded, setYearlyLoaded] = useState(false);
+
+  const col        = darkMode ? PAL.dark  : PAL.light;
+  const lineColors = darkMode ? LINE_COLORS_DARK : LINE_COLORS_LIGHT;
+  const grid       = darkMode ? '#1C2330' : '#E7E3DC';
+  const axis       = darkMode ? '#374151' : '#C0B8AE';
+  const Tooltip    = TT(darkMode);
+
+  const tabs = [
+    { id: 'monthly', label: 'Monthly Team',  icon: CalendarDays },
+    { id: 'yearly',  label: 'Yearly Stats',  icon: Star         },
+    { id: 'board',   label: 'Leaderboard',   icon: Trophy       },
   ];
 
-  const loadAllUsers = useCallback(async () => {
-    try {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, name')
-        .order('name', { ascending: true });
-      
-      setAllUsers(profiles || []);
-      return profiles || [];
-    } catch (error) {
-      console.error('Error loading users:', error);
-      return [];
-    }
-  }, []);
+  // ── Load all users ─────────────────────────────────────────────────────────
+  const loadUsers = useCallback(async () => {
+    if (allUsers.length) return allUsers;
+    const { data } = await supabase.from('profiles').select('id, name').order('name', { ascending: true });
+    const users = data || [];
+    setAllUsers(users);
+    return users;
+  }, [allUsers]);
 
-  const loadMonthlyTeamData = useCallback(async () => {
+  // ── Monthly team — single query per user (batch) ───────────────────────────
+  // Original had N*30 queries. Now: N queries (one per user for date range).
+  const loadMonthly = useCallback(async () => {
+    if (monthlyData.length) return;
     setLoading(true);
     try {
-      const users = await loadAllUsers();
-      const data = [];
-      
-      // Get last 30 days
-      for (let i = 29; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        
-        const dayData = {
-          date: date.toLocaleDateString('en', { month: 'short', day: 'numeric' }),
-          fullDate: dateStr
-        };
-        
-        // Get data for each user
-        for (const userProfile of users) {
-          const { data: tasks } = await supabase
-            .from('custom_tasks')
-            .select('*')
-            .eq('user_id', userProfile.id)
-            .eq('date', dateStr);
-          
-          const completed = (tasks || []).filter(t => t.completed).length;
-          const total = (tasks || []).length;
-          const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-          
-          dayData[userProfile.name] = percentage;
-        }
-        
-        data.push(dayData);
-      }
-      
-      setMonthlyData(data);
-    } catch (error) {
-      console.error('Error loading monthly data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [loadAllUsers]);
+      const users = await loadUsers();
+      if (!users.length) { setLoading(false); return; }
 
-  const loadYearlyTeamData = useCallback(async () => {
+      const today = new Date();
+      const dates = Array.from({ length: 30 }, (_, i) => {
+        const d = new Date(today); d.setDate(d.getDate() - (29 - i));
+        return d.toISOString().split('T')[0];
+      });
+
+      // Fetch all custom_tasks for all users in range — one query
+      const { data: allRows } = await supabase
+        .from('custom_tasks').select('user_id, date, completed')
+        .in('user_id', users.map(u => u.id))
+        .gte('date', dates[0]).lte('date', dates[29]);
+
+      const rows = allRows || [];
+
+      const built = dates.map(ds => {
+        const d     = new Date(ds + 'T00:00:00');
+        const point = { date: d.toLocaleDateString('en', { month: 'short', day: 'numeric' }), fullDate: ds };
+        users.forEach(u => {
+          const t    = rows.filter(r => r.user_id === u.id && r.date === ds);
+          const done = t.filter(r => r.completed).length;
+          point[u.name] = t.length > 0 ? Math.round((done / t.length) * 100) : 0;
+        });
+        return point;
+      });
+
+      setMonthlyData(built);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, [monthlyData.length, loadUsers]);
+
+  // ── Yearly stats — one query per user for full year ────────────────────────
+  // Original had 365*N queries. Now: N queries.
+  const loadYearly = useCallback(async () => {
+    if (yearlyLoaded) return;
     setLoading(true);
     try {
-      const users = await loadAllUsers();
-      const data = [];
-      const stats = {};
-      
-      // Initialize stats for each user
+      const users = await loadUsers();
+      if (!users.length) { setLoading(false); return; }
+
+      const today    = new Date();
+      const yearAgo  = new Date(today); yearAgo.setDate(yearAgo.getDate() - 364);
+      const startDate = yearAgo.toISOString().split('T')[0];
+
+      // One query for entire team's year
+      const { data: allRows } = await supabase
+        .from('custom_tasks').select('user_id, date, completed')
+        .in('user_id', users.map(u => u.id))
+        .gte('date', startDate);
+
+      const rows = allRows || [];
+      const stats_ = {};
+
       users.forEach(u => {
-        stats[u.name] = {
-          totalDays: 0,
-          perfectDays: 0,
-          goodDays: 0,
-          averagePercentage: 0,
-          totalPercentage: 0
+        const userRows = rows.filter(r => r.user_id === u.id);
+        const days     = [...new Set(userRows.map(r => r.date))];
+        let totalPct = 0, perfectDays = 0, goodDays = 0;
+
+        days.forEach(ds => {
+          const t    = userRows.filter(r => r.date === ds);
+          const done = t.filter(r => r.completed).length;
+          const pct  = t.length > 0 ? Math.round((done / t.length) * 100) : 0;
+          totalPct += pct;
+          if (pct === 100) perfectDays++;
+          if (pct >= 70)   goodDays++;
+        });
+
+        stats_[u.name] = {
+          name:        u.name,
+          isMe:        u.id === user?.id,
+          totalDays:   days.length,
+          perfectDays,
+          goodDays,
+          avgPct:      days.length > 0 ? Math.round(totalPct / days.length) : 0,
         };
       });
-      
-      // Get last 365 days
-      for (let i = 364; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        
-        const dayData = {
-          date: date.toLocaleDateString('en', { month: 'short', day: 'numeric' }),
-          fullDate: dateStr,
-          month: date.getMonth(),
-          dayOfYear: i
-        };
-        
-        // Get data for each user
-        for (const userProfile of users) {
-          const { data: tasks } = await supabase
-            .from('custom_tasks')
-            .select('*')
-            .eq('user_id', userProfile.id)
-            .eq('date', dateStr);
-          
-          const completed = (tasks || []).filter(t => t.completed).length;
-          const total = (tasks || []).length;
-          const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-          
-          dayData[userProfile.name] = percentage;
-          
-          // Update stats
-          if (total > 0) {
-            stats[userProfile.name].totalDays++;
-            stats[userProfile.name].totalPercentage += percentage;
-            if (percentage === 100) stats[userProfile.name].perfectDays++;
-            if (percentage >= 70) stats[userProfile.name].goodDays++;
-          }
-        }
-        
-        data.push(dayData);
-      }
-      
-      // Calculate averages
-      Object.keys(stats).forEach(userName => {
-        if (stats[userName].totalDays > 0) {
-          stats[userName].averagePercentage = Math.round(
-            stats[userName].totalPercentage / stats[userName].totalDays
-          );
-        }
-      });
-      
-      setYearlyData(data);
-      setYearlyStats(stats);
-    } catch (error) {
-      console.error('Error loading yearly data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [loadAllUsers]);
+
+      setYearlyStats(stats_);
+      setYearlyLoaded(true);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, [yearlyLoaded, loadUsers, user]);
 
   useEffect(() => {
-    if (selectedView === 'monthly' && monthlyData.length === 0) {
-      loadMonthlyTeamData();
-    } else if ((selectedView === 'yearly' || selectedView === 'stats') && yearlyData.length === 0) {
-      loadYearlyTeamData();
-    }
-  }, [selectedView, monthlyData.length, yearlyData.length, loadMonthlyTeamData, loadYearlyTeamData]);
+    if (tab === 'monthly' || tab === 'board') loadMonthly();
+    if (tab === 'yearly') loadYearly();
+  }, [tab]); // eslint-disable-line
 
-  const getLineColor = (index) => {
-    const colors = ['#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#84CC16', '#EC4899'];
-    return colors[index % colors.length];
-  };
+  // ── Leaderboard — from today's monthly snapshot (last entry) ──────────────
+  const todayEntry   = monthlyData[monthlyData.length - 1] || {};
+  const leaderboard  = allUsers
+    .map(u => ({ name: u.name, isMe: u.id === user?.id, pct: todayEntry[u.name] ?? 0 }))
+    .sort((a, b) => b.pct - a.pct);
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className={`p-3 rounded-lg shadow-lg border ${
-          darkMode 
-            ? 'bg-gray-800 border-gray-600 text-white' 
-            : 'bg-white border-gray-200 text-gray-900'
-        }`}>
-          <p className="font-semibold mb-1">{label}</p>
-          {payload.map((entry, index) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {entry.value}%
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
+  // ─── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className={`rounded-xl shadow-sm p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-        <h2 className={`text-2xl font-bold mb-6 flex items-center ${
-          darkMode ? 'text-white' : 'text-gray-900'
-        }`}>
-          <Users className="h-6 w-6 text-purple-500 mr-2" />
-          Custom Tasks - Team Performance
-        </h2>
+    <div className="space-y-3 sm:space-y-4 animate-fadeIn">
 
-        <div className="flex flex-wrap gap-2">
-          {views.map(({ id, name, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setSelectedView(id)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                selectedView === id
-                  ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg'
-                  : darkMode
-                  ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-purple-600'
-              }`}
-            >
-              <Icon className="h-5 w-5" />
-              <span>{name}</span>
+      {/* ── Header + tabs ──────────────────────────────────────────────────── */}
+      <div className={`rounded-2xl border p-3 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-stone-200'}`}>
+        <h2 className={`font-black text-base mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-stone-900'}`}
+          style={{ fontFamily: 'Georgia, serif' }}>
+          <Users className="h-5 w-5" style={{ color: col.sky }} />
+          Custom Tasks — Team Reports
+        </h2>
+        <div className="flex flex-wrap gap-1.5">
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <button key={id} onClick={() => setTab(id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 ${
+                tab === id
+                  ? darkMode ? 'bg-sky-500 text-white shadow-md' : 'bg-teal-700 text-white shadow-md'
+                  : darkMode ? 'text-gray-500 hover:bg-gray-800 hover:text-gray-200' : 'text-stone-400 hover:bg-stone-100 hover:text-teal-800'
+              }`}>
+              <Icon className="h-3.5 w-3.5" />{label}
             </button>
           ))}
         </div>
       </div>
 
-      {loading ? (
-        <div className={`rounded-xl shadow-sm p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-          <div className="text-center py-12">
-            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4 ${
-              darkMode ? 'border-purple-400' : 'border-purple-600'
-            }`}></div>
-            <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-              Loading team data... This may take a moment
-            </p>
-          </div>
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="loading-spinner h-8 w-8 mr-3" />
+          <span className={`text-sm ${darkMode ? 'text-gray-500' : 'text-stone-400'}`}>Loading team data…</span>
         </div>
-      ) : (
-        <>
-          {/* Monthly Team View */}
-          {selectedView === 'monthly' && (
-            <div className="space-y-6">
-              <div className={`rounded-xl shadow-sm p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Last 30 Days - Team Comparison
-                </h3>
-                <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  See how each team member performed on custom tasks over the last month
+      )}
+
+      {/* ══ MONTHLY TEAM ════════════════════════════════════════════════════════ */}
+      {tab === 'monthly' && !loading && (
+        <div className="space-y-4">
+          {!monthlyData.length ? (
+            <div className="text-center py-16">
+              <button onClick={loadMonthly} className={`px-5 py-2.5 rounded-xl font-bold text-sm ${darkMode ? 'bg-sky-600 text-white' : 'bg-teal-700 text-white'}`}>Load Team Data</button>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                <StatCard label="Members"     value={allUsers.length}                                           icon={Users}      color={col.sky}     darkMode={darkMode} />
+                <StatCard label="Avg Today"   value={`${leaderboard.length ? Math.round(leaderboard.reduce((s,u)=>s+u.pct,0)/leaderboard.length) : 0}%`} icon={TrendingUp} color={col.teal} darkMode={darkMode} />
+                <StatCard label="Top Scorer"  value={leaderboard[0] ? `${leaderboard[0].pct}%` : '–'} sub={leaderboard[0]?.name} icon={Trophy} color={col.amber} darkMode={darkMode} />
+              </div>
+
+              <Panel title="30-Day Team Comparison" icon={TrendingUp} color={col.sky} darkMode={darkMode}>
+                <p className={`text-xs mb-3 ${darkMode ? 'text-gray-500' : 'text-stone-400'}`}>
+                  Each line = one team member's custom task completion %
                 </p>
-                <div className="h-96">
+                <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={monthlyData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
-                      <XAxis 
-                        dataKey="date" 
-                        stroke={darkMode ? '#9CA3AF' : '#6B7280'}
-                        style={{ fontSize: '10px' }}
-                      />
-                      <YAxis 
-                        domain={[0, 100]} 
-                        stroke={darkMode ? '#9CA3AF' : '#6B7280'}
-                        label={{ value: 'Completion %', angle: -90, position: 'insideLeft' }}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      {allUsers.map((userProfile, index) => (
-                        <Line
-                          key={userProfile.id}
-                          type="monotone"
-                          dataKey={userProfile.name}
-                          stroke={getLineColor(index)}
-                          strokeWidth={2}
-                          dot={{ fill: getLineColor(index), r: 3 }}
-                          activeDot={{ r: 6 }}
-                        />
+                      <CartesianGrid strokeDasharray="3 3" stroke={grid} />
+                      <XAxis dataKey="date" stroke={axis} style={{ fontSize: 10 }} interval={4} angle={-20} textAnchor="end" height={36} />
+                      <YAxis domain={[0,100]} stroke={axis} style={{ fontSize: 11 }} unit="%" />
+                      <RTooltip content={<Tooltip />} />
+                      {allUsers.map((u, i) => (
+                        <Line key={u.id} type="monotone" dataKey={u.name} name={u.name}
+                          stroke={lineColors[i % lineColors.length]} strokeWidth={u.id === user?.id ? 3 : 1.5}
+                          dot={false} activeDot={{ r: 5 }}
+                          strokeDasharray={u.id !== user?.id ? '4 2' : undefined} />
                       ))}
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-
                 {/* Legend */}
-                <div className="mt-4 flex flex-wrap gap-3 justify-center">
-                  {allUsers.map((userProfile, index) => (
-                    <div key={userProfile.id} className="flex items-center space-x-2">
-                      <div 
-                        className="w-4 h-4 rounded"
-                        style={{ backgroundColor: getLineColor(index) }}
-                      />
-                      <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        {userProfile.name}
-                        {userProfile.id === user.id && ' (You)'}
+                <div className="flex flex-wrap gap-3 mt-3">
+                  {allUsers.map((u, i) => (
+                    <div key={u.id} className="flex items-center gap-1.5 text-[11px]">
+                      <div className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: lineColors[i % lineColors.length] }} />
+                      <span className={darkMode ? 'text-gray-400' : 'text-stone-500'}>
+                        {u.name}{u.id === user?.id ? ' (you)' : ''}
                       </span>
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
-          )}
+              </Panel>
 
-          {/* Yearly Team View */}
-          {selectedView === 'yearly' && (
-            <div className="space-y-6">
-              <div className={`rounded-xl shadow-sm p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Full Year - Team Performance
-                </h3>
-                <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Complete year view of how each team member performed on custom tasks
-                </p>
-                <div className="h-96">
+              {/* Area chart for comparison richness */}
+              <Panel title="Team Cumulative View" icon={Activity} color={col.emerald} darkMode={darkMode}>
+                <div className="h-56 sm:h-72">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={yearlyData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
-                      <XAxis 
-                        dataKey="date" 
-                        stroke={darkMode ? '#9CA3AF' : '#6B7280'}
-                        style={{ fontSize: '8px' }}
-                        interval={30}
-                      />
-                      <YAxis 
-                        domain={[0, 100]} 
-                        stroke={darkMode ? '#9CA3AF' : '#6B7280'}
-                        label={{ value: 'Completion %', angle: -90, position: 'insideLeft' }}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      {allUsers.map((userProfile, index) => (
-                        <Area
-                          key={userProfile.id}
-                          type="monotone"
-                          dataKey={userProfile.name}
-                          stroke={getLineColor(index)}
-                          fill={getLineColor(index)}
-                          fillOpacity={0.2}
-                          strokeWidth={2}
-                        />
+                    <AreaChart data={monthlyData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={grid} />
+                      <XAxis dataKey="date" stroke={axis} style={{ fontSize: 10 }} interval={4} angle={-20} textAnchor="end" height={36} />
+                      <YAxis domain={[0,100]} stroke={axis} style={{ fontSize: 11 }} unit="%" />
+                      <RTooltip content={<Tooltip />} />
+                      {allUsers.map((u, i) => (
+                        <Area key={u.id} type="monotone" dataKey={u.name} name={u.name}
+                          stroke={lineColors[i % lineColors.length]}
+                          fill={lineColors[i % lineColors.length]}
+                          fillOpacity={0.08} strokeWidth={u.id === user?.id ? 2.5 : 1.5} />
                       ))}
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
+              </Panel>
+            </>
+          )}
+        </div>
+      )}
 
-                {/* Legend */}
-                <div className="mt-4 flex flex-wrap gap-3 justify-center">
-                  {allUsers.map((userProfile, index) => (
-                    <div key={userProfile.id} className="flex items-center space-x-2">
-                      <div 
-                        className="w-4 h-4 rounded"
-                        style={{ backgroundColor: getLineColor(index) }}
-                      />
-                      <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        {userProfile.name}
-                        {userProfile.id === user.id && ' (You)'}
-                      </span>
+      {/* ══ YEARLY STATS ════════════════════════════════════════════════════════ */}
+      {tab === 'yearly' && !loading && (
+        <div className="space-y-4">
+          {!yearlyLoaded ? (
+            <div className="text-center py-16">
+              <button onClick={loadYearly} className={`px-5 py-2.5 rounded-xl font-bold text-sm ${darkMode ? 'bg-sky-600 text-white' : 'bg-teal-700 text-white'}`}>Load Yearly Stats</button>
+            </div>
+          ) : (
+            <>
+              <Panel title="Year Summary — Custom Tasks" icon={Star} color={col.amber} darkMode={darkMode}>
+                <div className="space-y-4">
+                  {Object.values(yearlyStats).sort((a, b) => b.avgPct - a.avgPct).map((s, i) => (
+                    <div key={s.name} className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                      s.isMe
+                        ? darkMode ? 'border-sky-700/40 bg-sky-900/10' : 'border-teal-300 bg-teal-50'
+                        : darkMode ? 'border-gray-800 bg-gray-900/50' : 'border-stone-200 bg-stone-50'
+                    }`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-10 w-10 rounded-full flex items-center justify-center font-black text-sm`}
+                            style={{ background: lineColors[i % lineColors.length] + '33', color: lineColors[i % lineColors.length] }}>
+                            {s.name[0]?.toUpperCase()}
+                          </div>
+                          <div>
+                            <span className={`font-black text-sm ${darkMode ? 'text-white' : 'text-stone-900'}`}>
+                              {s.name}
+                              {s.isMe && <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${darkMode?'bg-sky-900/40 text-sky-400':'bg-teal-100 text-teal-800'}`}>you</span>}
+                            </span>
+                            <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-stone-400'}`}>Custom tasks · full year</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {s.avgPct >= 80 && <Trophy className="h-5 w-5 text-amber-400" />}
+                          <span className="text-xl font-black" style={{ fontFamily: 'Georgia, serif', color: s.avgPct>=70?col.emerald:s.avgPct>=40?col.amber:col.rose }}>{s.avgPct}%</span>
+                        </div>
+                      </div>
+
+                      {/* Mini stat row */}
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        {[
+                          { l: 'Active Days', v: s.totalDays,   c: col.sky     },
+                          { l: 'Perfect 💯',  v: s.perfectDays, c: col.lime    },
+                          { l: 'Good ≥70%',   v: s.goodDays,    c: col.emerald },
+                        ].map(({ l, v, c }) => (
+                          <div key={l} className={`text-center p-2 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white shadow-sm'}`}>
+                            <div className="font-black text-base" style={{ color: c, fontFamily: 'Georgia, serif' }}>{v}</div>
+                            <div className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-stone-400'}`}>{l}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Progress bar */}
+                      <div className={`w-full rounded-full h-2 ${darkMode ? 'bg-gray-800' : 'bg-stone-200'}`}>
+                        <div className="h-2 rounded-full transition-all duration-700 progress-bar" style={{ width: `${s.avgPct}%` }} />
+                      </div>
+
+                      {/* Summary text */}
+                      <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-stone-400'}`}>
+                        {s.name} used custom tasks on <strong style={{ color: col.sky }}>{s.totalDays}</strong> days this year
+                        {s.totalDays > 0 && <>, averaging <strong style={{ color: s.avgPct>=70?col.emerald:col.amber }}>{s.avgPct}%</strong></>}.
+                        {s.perfectDays > 0 && <> Achieved <strong style={{ color: col.lime }}>{s.perfectDays} perfect days</strong>.</>}
+                      </p>
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
+              </Panel>
+
+              {/* Bar comparison */}
+              <Panel title="Year Avg Comparison" icon={BarChart3} color={col.sky} darkMode={darkMode}>
+                <div style={{ height: Math.max(200, Object.values(yearlyStats).length * 48) }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={Object.values(yearlyStats).sort((a,b)=>b.avgPct-a.avgPct)} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke={grid} />
+                      <XAxis type="number" domain={[0,100]} stroke={axis} style={{ fontSize: 11 }} unit="%" />
+                      <YAxis type="category" dataKey="name" stroke={axis} style={{ fontSize: 11 }} width={90} />
+                      <RTooltip content={<Tooltip />} />
+                      <Bar dataKey="avgPct" name="Year Avg %" radius={[0,6,6,0]}>
+                        {Object.values(yearlyStats).sort((a,b)=>b.avgPct-a.avgPct).map((s, i) => (
+                          <Cell key={i} fill={lineColors[i % lineColors.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Panel>
+            </>
           )}
+        </div>
+      )}
 
-          {/* Yearly Stats */}
-          {selectedView === 'stats' && (
-            <div className="space-y-6">
-              <div className={`rounded-xl shadow-sm p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                <h3 className={`text-lg font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Year Summary - Custom Tasks Performance
-                </h3>
+      {/* ══ LEADERBOARD ═════════════════════════════════════════════════════════ */}
+      {tab === 'board' && !loading && (
+        <div className="space-y-4">
+          {!monthlyData.length ? (
+            <div className="text-center py-16">
+              <button onClick={loadMonthly} className={`px-5 py-2.5 rounded-xl font-bold text-sm ${darkMode ? 'bg-sky-600 text-white' : 'bg-teal-700 text-white'}`}>Load Data</button>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                <StatCard label="Members"      value={allUsers.length}                                                                            icon={Users}   color={col.sky}     darkMode={darkMode} />
+                <StatCard label="Top Performer" value={leaderboard[0]?.pct ? `${leaderboard[0].pct}%` : '–'} sub={leaderboard[0]?.name || '–'}  icon={Trophy}  color={col.amber}   darkMode={darkMode} />
+                <StatCard label="Team Average"  value={`${leaderboard.length ? Math.round(leaderboard.reduce((s,u)=>s+u.pct,0)/leaderboard.length) : 0}%`} icon={Activity} color={col.teal} darkMode={darkMode} />
+              </div>
 
-                <div className="space-y-4">
-                  {allUsers.map((userProfile, index) => {
-                    const stats = yearlyStats[userProfile.name] || {};
-                    const isCurrentUser = userProfile.id === user.id;
-                    
+              <Panel title="Today's Leaderboard" icon={Trophy} color={col.amber} darkMode={darkMode}>
+                <div className="space-y-2">
+                  {leaderboard.map((u, i) => {
+                    const medals = ['🥇','🥈','🥉'];
                     return (
-                      <div
-                        key={userProfile.id}
-                        className={`p-6 rounded-xl border transition-all duration-300 ${
-                          isCurrentUser
-                            ? darkMode
-                              ? 'bg-purple-900/20 border-purple-500 ring-2 ring-purple-500'
-                              : 'bg-purple-50 border-purple-300 ring-2 ring-purple-500'
-                            : darkMode
-                            ? 'bg-gray-700 border-gray-600'
-                            : 'bg-white border-gray-200'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <div 
-                              className="w-12 h-12 rounded-full flex items-center justify-center"
-                              style={{ backgroundColor: getLineColor(index) + '30' }}
-                            >
-                              <Users className="h-6 w-6" style={{ color: getLineColor(index) }} />
-                            </div>
-                            <div>
-                              <h4 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                {userProfile.name}
-                                {isCurrentUser && (
-                                  <span className="ml-2 text-sm font-normal text-purple-500">
-                                    (You)
-                                  </span>
-                                )}
-                              </h4>
-                              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                Custom Tasks - Full Year Performance
-                              </p>
-                            </div>
-                          </div>
-                          {stats.averagePercentage >= 80 && (
-                            <Trophy className="h-8 w-8 text-yellow-500" />
-                          )}
+                      <div key={i} className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border transition-all hover:-translate-y-0.5 hover:shadow-md ${
+                        u.isMe
+                          ? darkMode ? 'border-sky-700/40 bg-sky-900/10' : 'border-teal-300 bg-teal-50'
+                          : darkMode ? 'border-gray-800' : 'border-stone-200'
+                      }`}>
+                        <div className="text-lg w-8 text-center flex-shrink-0 font-black">
+                          {i < 3 ? medals[i] : <span className={`text-xs ${darkMode?'text-gray-600':'text-stone-300'}`}>#{i+1}</span>}
                         </div>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                          <div className={`p-3 rounded-lg text-center ${
-                            darkMode ? 'bg-gray-800' : 'bg-gray-50'
-                          }`}>
-                            <div className={`text-2xl font-bold ${
-                              darkMode ? 'text-purple-400' : 'text-purple-600'
-                            }`}>
-                              {stats.averagePercentage || 0}%
-                            </div>
-                            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                              Average
-                            </div>
+                        <div className={`h-9 w-9 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0`}
+                          style={{ background: lineColors[i % lineColors.length] + '33', color: lineColors[i % lineColors.length] }}>
+                          {u.name[0]?.toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`font-bold text-sm truncate mb-0.5 ${darkMode?'text-white':'text-stone-900'}`}>
+                            {u.name}
+                            {u.isMe && <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${darkMode?'bg-sky-900/40 text-sky-400':'bg-teal-100 text-teal-800'}`}>you</span>}
                           </div>
-
-                          <div className={`p-3 rounded-lg text-center ${
-                            darkMode ? 'bg-gray-800' : 'bg-gray-50'
-                          }`}>
-                            <div className={`text-2xl font-bold ${
-                              darkMode ? 'text-green-400' : 'text-green-600'
-                            }`}>
-                              {stats.perfectDays || 0}
-                            </div>
-                            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                              Perfect Days
-                            </div>
-                          </div>
-
-                          <div className={`p-3 rounded-lg text-center ${
-                            darkMode ? 'bg-gray-800' : 'bg-gray-50'
-                          }`}>
-                            <div className={`text-2xl font-bold ${
-                              darkMode ? 'text-blue-400' : 'text-blue-600'
-                            }`}>
-                              {stats.goodDays || 0}
-                            </div>
-                            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                              Good Days (70%+)
-                            </div>
-                          </div>
-
-                          <div className={`p-3 rounded-lg text-center ${
-                            darkMode ? 'bg-gray-800' : 'bg-gray-50'
-                          }`}>
-                            <div className={`text-2xl font-bold ${
-                              darkMode ? 'text-orange-400' : 'text-orange-600'
-                            }`}>
-                              {stats.totalDays || 0}
-                            </div>
-                            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                              Active Days
-                            </div>
+                          <div className={`w-full h-1.5 rounded-full ${darkMode?'bg-gray-800':'bg-stone-200'}`}>
+                            <div className="h-1.5 rounded-full progress-bar" style={{ width: `${u.pct}%` }} />
                           </div>
                         </div>
-
-                        {/* Text Summary */}
-                        <div className={`mt-4 p-4 rounded-lg border-l-4 ${
-                          isCurrentUser
-                            ? darkMode
-                              ? 'bg-purple-900/10 border-purple-500'
-                              : 'bg-purple-50 border-purple-500'
-                            : darkMode
-                            ? 'bg-gray-800 border-gray-600'
-                            : 'bg-gray-50 border-gray-300'
-                        }`}>
-                          <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                            <strong>{userProfile.name}</strong> completed custom tasks on{' '}
-                            <strong className="text-purple-600">{stats.totalDays || 0} days</strong> this year
-                            {stats.totalDays > 0 && (
-                              <>
-                                , with an average completion rate of{' '}
-                                <strong className="text-purple-600">{stats.averagePercentage || 0}%</strong>.
-                                {stats.perfectDays > 0 && (
-                                  <> Achieved <strong className="text-green-600">{stats.perfectDays} perfect days</strong> (100% completion).</>
-                                )}
-                              </>
-                            )}
-                          </p>
+                        <div className="flex-shrink-0 text-right">
+                          <div className="text-lg font-black" style={{ fontFamily: 'Georgia, serif', color: u.pct>=70?col.emerald:u.pct>=40?col.amber:col.rose }}>{u.pct}%</div>
+                          <div className="text-[10px]">{u.pct===100?'🏆':u.pct>=70?'✅':u.pct>0?'🌱':'–'}</div>
                         </div>
                       </div>
                     );
                   })}
+                  {!leaderboard.length && <p className={`text-center py-8 text-sm ${darkMode?'text-gray-600':'text-stone-400'}`}>No data yet today</p>}
                 </div>
-              </div>
-            </div>
+              </Panel>
+            </>
           )}
-        </>
+        </div>
       )}
+
     </div>
   );
 };
