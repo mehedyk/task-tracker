@@ -13,7 +13,7 @@
 
 **A comprehensive Islamic lifestyle, academic progress, and personal development tracker**
 
-**Copyright © 2025 S. M. Mehedy Kawser. All Rights Reserved.**
+**Copyright © 2026 S. M. Mehedy Kawser. All Rights Reserved.**
 
 [Live App](https://task-tracker-taqaddum.vercel.app/) · [Report Bug](https://github.com/mehedyk/task-tracker-taqaddum/issues) · [Request Feature](https://github.com/mehedyk/task-tracker-taqaddum/issues)
 
