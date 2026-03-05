@@ -434,7 +434,7 @@ The app is deployed on **Vercel** with automatic deployments from the `main` bra
 
 **Proprietary — All Rights Reserved**
 
-Copyright © 2025 S. M. Mehedy Kawser
+Copyright © 2026 S. M. Mehedy Kawser
 
 This software and its source code are the exclusive property of S. M. Mehedy Kawser. The repository is made public for transparency and educational reference only.
 
