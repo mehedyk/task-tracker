@@ -1,0 +1,113 @@
+PROPRIETARY SOFTWARE LICENSE
+
+Copyright (c) 2026 S. M. Mehedy Kawser
+All Rights Reserved.
+
+================================================================================
+TAQADDUM (تقدّم) — TASK TRACKER
+================================================================================
+
+This software, including all source code, documentation, assets, configuration
+files, and associated materials (collectively, the "Software"), is the exclusive
+intellectual property of S. M. Mehedy Kawser ("the Author").
+
+The Software is made publicly visible on GitHub for transparency and educational
+reference purposes ONLY. Public visibility does NOT constitute a grant of any
+license, right, or permission to use, copy, modify, merge, publish, distribute,
+sublicense, sell, or otherwise exploit the Software.
+
+================================================================================
+PERMITTED USES
+================================================================================
+
+Subject to the terms of this License, you are permitted to:
+
+  1. VIEW the source code for personal learning and educational purposes.
+
+  2. USE the officially deployed application at:
+     https://task-tracker-taqaddum.vercel.app/
+
+  3. REFERENCE the architecture, patterns, and design decisions in your own
+     original work, provided you write your own code from scratch and do not
+     copy any portion of this Software.
+
+================================================================================
+PROHIBITED USES
+================================================================================
+
+Without explicit prior written permission from the Author, you are strictly
+prohibited from:
+
+  1. COPYING, reproducing, or duplicating any portion of this Software,
+     in whole or in part, in any medium or form.
+
+  2. USING this Software or any substantial portion of it in personal,
+     academic, commercial, or open-source projects.
+
+  3. MODIFYING, adapting, translating, or creating derivative works based
+     on this Software.
+
+  4. DISTRIBUTING, publishing, sublicensing, selling, or otherwise making
+     this Software available to third parties.
+
+  5. DEPLOYING your own instance of this Software without written permission
+     from the Author.
+
+  6. REMOVING, altering, or obscuring this copyright notice or any other
+     proprietary notices contained in the Software.
+
+  7. REVERSE ENGINEERING, decompiling, or disassembling any compiled or
+     minified portion of this Software.
+
+================================================================================
+REQUESTING PERMISSION
+================================================================================
+
+To request permission for any use not explicitly permitted above, contact:
+
+  Email   : mehedyk@proton.me
+  Subject : "Taqaddum Code Usage Request"
+
+Permission requests must include:
+  - Your full name and organisation (if applicable)
+  - The specific portions of the Software you wish to use
+  - The purpose and context of the intended use
+  - How the Software will be distributed or deployed
+  - Any commercial or monetisation aspects
+
+The Author reserves the right to grant or deny permission requests at their
+sole discretion, with or without reason.
+
+================================================================================
+NO WARRANTY
+================================================================================
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHERWISE DEALING
+IN THE SOFTWARE.
+
+================================================================================
+ENFORCEMENT
+================================================================================
+
+Unauthorised use of this Software constitutes copyright infringement and may
+result in civil and/or criminal penalties under applicable law. The Author
+reserves the right to pursue all available legal remedies for any violation of
+this License.
+
+================================================================================
+
+This License shall be governed by and construed in accordance with applicable
+copyright law.
+
+S. M. Mehedy Kawser
+Daffodil International University, Software Engineering
+Dhaka, Bangladesh
+mehedyk@proton.me | https://mehedy.netlify.app
+
+Taqaddum (تقدّم) — Progress Every Day
