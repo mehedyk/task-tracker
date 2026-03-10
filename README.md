@@ -513,7 +513,7 @@ Founder & Lead Developer
 
 Made with purpose by [@mehedyk](https://github.com/mehedyk)
 
-**Taqaddum (تقدّم) — Progress Every Day**
+**Taqaddum (تقدّم) — Track Progress Every Day**
 
 **Copyright © 2026 S. M. Mehedy Kawser. All Rights Reserved.**
 
